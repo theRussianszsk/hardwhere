@@ -2,7 +2,7 @@
  * Vendor-local UI primitives. Names mirror the shared kit (packages/shared/src/ui) so a swap is a one-file import change.
  * Every control is >= 44px tall, labelled, and light-theme only.
  */
-import { useEffect, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { Modal, ModalBody, ModalHeader, Spinner } from "flowbite-react";
 import { formatAge, parsePesoToCents, useSyncStatus, type MatchClass, type OutboxState } from "@hardwhere/shared";
 import {
@@ -108,8 +108,16 @@ export function TextAreaField({ label, error, hint, ...rest }: TextareaHTMLAttri
 export function PesoInput({ label, cents, onChange, error, hint, optional, id, disabled }: { label: string; cents: number | null; onChange: (c: number | null) => void; error?: string | null; hint?: string; optional?: boolean; id?: string; disabled?: boolean }) {
   const [text, setText] = useState(cents === null ? "" : (cents / 100).toFixed(2));
   const [local, setLocal] = useState<string | null>(null);
-  // Re-sync when the parent replaces the value (e.g. reload after a version conflict).
-  useEffect(() => { setText(cents === null ? "" : (cents / 100).toFixed(2)); setLocal(null); }, [cents]);
+  const textRef = useRef(text);
+  textRef.current = text;
+  // Re-sync only when the parent replaces the value (reload after a version conflict, a quick-amount button, a clamp).
+  // Our own onChange echoing back must not reformat the text mid-typing: "5" -> "5.00" -> "5.000" would be rejected and cleared.
+  useEffect(() => {
+    const shown = textRef.current.trim() === "" ? null : parsePesoToCents(textRef.current);
+    if (shown === cents) return;
+    setText(cents === null ? "" : (cents / 100).toFixed(2));
+    setLocal(null);
+  }, [cents]);
   const commit = (v: string) => {
     setText(v);
     if (v.trim() === "") { setLocal(optional ? null : "Enter an amount in pesos."); onChange(null); return; }
