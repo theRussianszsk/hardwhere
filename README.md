@@ -14,8 +14,8 @@ Two mobile apps and one API for hardware stores:
 > but **no APK/AAB/IPA was built or run**: the development machine has no JDK/Android SDK/Xcode. Native-only guarantees
 > (SQLCipher-encrypted database, Keychain/Keystore token storage, native camera and barcode scanner) are implemented
 > against the plugins' real typings but are **unverified on a device**. In the browser the database is *not* encrypted and the
-> token lives in `sessionStorage` (development only). Gemma 4 is wired but **not live-verified** (no API key); the demo uses a
-> clearly-labelled deterministic mock.
+> token lives in `sessionStorage` (development only). **Gemma 4 runs live** through OpenRouter (`AI_PROVIDER=openai`, verified on real
+> product photos, about 2–5 s per photo); with `AI_PROVIDER=mock` (the default) the apps use a clearly-labelled deterministic mock (*Demo AI*).
 
 ## Slides
 https://drive.google.com/file/d/1U-Ku0Sc_hNlbmDZKJe7fjSY68P0wWSTY/view?usp=sharing
@@ -65,7 +65,8 @@ Same deck in this repository: [inventOS_pitch_slides_4x3.pdf](inventOS_pitch_sli
   (no offline paid sales — that would need stock leasing; out of scope), marketplace orders/reservations. A queued command is never "done"
   until the server answers 2xx (or replays an idempotent result); 409 → *needs review*, 422/403 → *rejected*, network/5xx/429 → bounded
   exponential backoff with jitter.
-* **AI.** `VisionProvider` interface → `MockVisionProvider` (default, deterministic, every result labelled *Demo AI*) or
+* **AI.** `VisionProvider` interface → `MockVisionProvider` (default, deterministic, every result labelled *Demo AI*),
+  `OpenAiCompatibleVisionProvider` (Gemma 4 via OpenRouter or any OpenAI-compatible endpoint, live-verified) or
   `GemmaVisionProvider` (Gemini API `generateContent`, model ids documented by Google: `gemma-4-26b-a4b-it`, `gemma-4-31b-it`).
   Model output is validated strictly. A matcher combines barcode/GTIN, manufacturer+model, SKU/part numbers, trigram text similarity,
   brand, category and structured variant attributes and returns *exact / likely same / likely variant / possible duplicate / new
@@ -155,7 +156,7 @@ file name (`makita-drill.jpg`), else the mock returns *insufficient confidence* 
 AI_PROVIDER=openai
 AI_OPENAI_BASE_URL=https://openrouter.ai/api/v1
 AI_OPENAI_API_KEY=<your OpenRouter key>          # server-side only, api/.env is gitignored
-AI_OPENAI_MODEL=google/gemma-4-26b-a4b-it:free   # or google/gemma-4-26b-a4b-it, google/gemma-4-31b-it (image input confirmed in OpenRouter's model list)
+AI_OPENAI_MODEL=google/gemma-4-26b-a4b-it        # recommended for demos; ":free" works too but is often rate-limited (HTTP 429)
 AI_OPENAI_JSON_MODE=false                        # true adds response_format=json_object where the backend supports it
 ```
 Sends `POST {base}/chat/completions` with a text part and an `image_url` data URI. Local Ollama: `AI_OPENAI_BASE_URL=http://localhost:11434/v1`, no key needed.
@@ -164,8 +165,14 @@ Sends `POST {base}/chat/completions` with a text part and an `image_url` data UR
 **3. `gemma` — Gemma 4 through the Gemini API** (`GEMMA_API_KEY`, `GEMMA_MODEL=gemma-4-26b-a4b-it` or `gemma-4-31b-it`): `POST {base}/models/{model}:generateContent` with `inline_data`.
 
 In every live mode the model's reply is validated strictly (clamped confidences, whitelisted attribute keys, bounded lengths) and fed to the same catalog matcher; a failure answers `503 ai_unavailable`
-and the apps offer manual entry (inference is never faked offline). **The request contracts are covered by HTTP-fake tests; no live endpoint has been exercised in this repository** — to verify live,
-set the variables, upload a photo to `POST /api/v1/vendor/ai/analyses` (multipart `image`, header `Idempotency-Key`) and confirm `is_mock=false` in the response.
+and the apps offer manual entry (inference is never faked offline). Request contracts are covered by HTTP-fake tests (no network in CI).
+
+**Live verification (22 Oct 2026, `openai` provider, OpenRouter `google/gemma-4-26b-a4b-it`).** Real product photos were sent to `POST /api/v1/vendor/ai/analyses`:
+a Stanley PowerLock tape measure was read as brand *Stanley* and matched to the catalog's Stanley PowerLock variants (the person picks 5 m or 8 m);
+an IEK BA47-29 C16 breaker was read correctly (brand, model, 16 A, 2-pole) and, as that brand is not in the catalog, returned as a new product candidate;
+a photo with no visible label returned *insufficient confidence* instead of a guess. A call takes about 2–5 s (occasional spikes up to ~20 s at the provider)
+and costs about ₱0.02. The `:free` model variant answered `429 Too Many Requests` under load, so use the paid id for demos.
+To check yourself: set the variables, upload a photo and confirm `is_mock=false` and `provider_label` "Live AI" in the response. The `gemma` (Gemini API) provider has not been run live.
 
 ## API contract (server ↔ TypeScript)
 
@@ -208,7 +215,7 @@ Camera/photos (both apps) and coarse location (customer) permission strings are 
 ## Known limitations & hackathon trade-offs
 
 * No native build/device verification (see above). Browser storage is unencrypted dev storage.
-* Gemma 4 not exercised live (the `openai` and `gemma` providers are tested against HTTP fakes only). Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
+* Live AI is verified only through the `openai` provider (OpenRouter); the `gemma` (Gemini API) provider is tested against HTTP fakes only. Free OpenRouter models are rate-limited. Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
 * Offline *sales* are out of scope by design: stock cannot be kept consistent across disconnected devices without allocation/leasing.
 * Customer photo search requires a signed-in customer (AI cost control); text search is anonymous.
 * Browser dev note: the browser SQLite (jeep-sqlite) hydrates via `requestAnimationFrame`, so a tab opened in the *background* shows "Opening your store…" until it is shown. Use one focused tab; the web token lives in `sessionStorage`, so a new tab needs a fresh sign-in.
