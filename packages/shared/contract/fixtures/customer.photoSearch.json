@@ -1,0 +1,159 @@
+{
+    "data": {
+        "id": 1,
+        "purpose": "marketplace_search",
+        "provider": "mock",
+        "model": "mock-fixtures-v1",
+        "is_mock": true,
+        "provider_label": "Demo AI (deterministic mock, not live inference)",
+        "extracted": {
+            "name": "Claw Hammer 16oz",
+            "brand": "Stanley",
+            "model": "51-188",
+            "part_number": null,
+            "category": "Hand Tools",
+            "attributes": {
+                "weight_oz": 16
+            },
+            "pack_quantity": null,
+            "barcode_text": "4800000100017",
+            "confidence": {
+                "name": 0.9,
+                "brand": 0.9,
+                "model": 0.8,
+                "category": 0.9,
+                "attributes": 0.8,
+                "barcode": 0.95
+            },
+            "overall_confidence": 0.93,
+            "image_sufficient": true,
+            "notes": [
+                "Demo AI (deterministic mock): not a live model result."
+            ]
+        },
+        "classification": "exact_match",
+        "overall_confidence": 0.93,
+        "requires_confirmation": false,
+        "warnings": [],
+        "candidates": [
+            {
+                "rank": 1,
+                "classification": "exact_match",
+                "score": 1,
+                "matched_fields": [
+                    "brand",
+                    "model"
+                ],
+                "mismatched_fields": [],
+                "warnings": [],
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "brand": "Stanley",
+                    "manufacturer": "Stanley",
+                    "name": "Claw Hammer 51-188",
+                    "model_number": "51-188",
+                    "product_type": "Claw hammer",
+                    "description": "Stanley Claw Hammer 51-188. Demo catalog entry; specifications are indicative.",
+                    "attributes": {},
+                    "compatibility": [],
+                    "included_components": [],
+                    "safety_info": null,
+                    "warranty": null,
+                    "ph_specs": {},
+                    "synonyms": [
+                        "martilyo",
+                        "hammer"
+                    ],
+                    "status": "approved",
+                    "row_version": 1,
+                    "updated_at": "2026-01-01T00:00:00+00:00"
+                },
+                "variant": {
+                    "id": 1,
+                    "product_id": 1,
+                    "name": "Stanley 51-188 Claw Hammer 16oz",
+                    "model_number": "51-188",
+                    "part_number": null,
+                    "attributes": {
+                        "weight_oz": 16
+                    },
+                    "uom": "pc",
+                    "pack_quantity": 1,
+                    "is_default": true,
+                    "status": "approved",
+                    "barcodes": [
+                        {
+                            "code": "4800000100017",
+                            "type": "EAN13"
+                        }
+                    ]
+                }
+            },
+            {
+                "rank": 2,
+                "classification": "likely_variant",
+                "score": 0.521,
+                "matched_fields": [
+                    "brand",
+                    "category"
+                ],
+                "mismatched_fields": [
+                    "model",
+                    "attr:weight_oz"
+                ],
+                "warnings": [
+                    "Similar product with different head weight",
+                    "Possible product variant"
+                ],
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "brand": "Stanley",
+                    "manufacturer": "Stanley",
+                    "name": "Claw Hammer 51-188",
+                    "model_number": "51-188",
+                    "product_type": "Claw hammer",
+                    "description": "Stanley Claw Hammer 51-188. Demo catalog entry; specifications are indicative.",
+                    "attributes": {},
+                    "compatibility": [],
+                    "included_components": [],
+                    "safety_info": null,
+                    "warranty": null,
+                    "ph_specs": {},
+                    "synonyms": [
+                        "martilyo",
+                        "hammer"
+                    ],
+                    "status": "approved",
+                    "row_version": 1,
+                    "updated_at": "2026-01-01T00:00:00+00:00"
+                },
+                "variant": {
+                    "id": 1,
+                    "product_id": 1,
+                    "name": "Stanley 51-189 Claw Hammer 20oz",
+                    "model_number": "51-189",
+                    "part_number": null,
+                    "attributes": {
+                        "weight_oz": 20
+                    },
+                    "uom": "pc",
+                    "pack_quantity": 1,
+                    "is_default": false,
+                    "status": "approved",
+                    "barcodes": [
+                        {
+                            "code": "4800000100023",
+                            "type": "EAN13"
+                        }
+                    ]
+                }
+            }
+        ],
+        "created_at": "2026-01-01T00:00:00+00:00"
+    },
+    "meta": {
+        "server_time": "2026-01-01T00:00:00+00:00"
+    }
+}

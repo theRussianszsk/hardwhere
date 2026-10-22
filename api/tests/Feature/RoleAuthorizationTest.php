@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TenantRole;
+use App\Models\Store;
 use Tests\Support\World;
 
 beforeEach(function () {
@@ -53,7 +54,7 @@ it('enforces the role matrix on the server', function (string $method, string $u
 })->with('roleMatrix');
 
 it('lets only discount-capable roles apply discounts, and keeps store-bound staff in their store', function () {
-    $second = \App\Models\Store::create(['tenant_id' => $this->w['tenant']->id, 'name' => 'Branch', 'code' => 'BR-2', 'address_line' => 'x', 'city' => 'y', 'province' => 'z']);
+    $second = Store::create(['tenant_id' => $this->w['tenant']->id, 'name' => 'Branch', 'code' => 'BR-2', 'address_line' => 'x', 'city' => 'y', 'province' => 'z']);
     World::member($this->w['tenant'], TenantRole::Cashier, 'bound@alpha.test', $this->w['store']);
     $cashier = World::login($this, 'bound@alpha.test', 'vendor', 'alpha');
     $line = ['listing_id' => $this->s['listing']->id, 'quantity' => 1];

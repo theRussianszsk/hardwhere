@@ -1,0 +1,114 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "category": {
+                "id": 1,
+                "slug": "hammers",
+                "name": "Hammers"
+            },
+            "category_id": 1,
+            "brand": "Tolsen",
+            "manufacturer": "Tolsen",
+            "name": "Claw Hammer 25101",
+            "model_number": "25101",
+            "product_type": "Claw hammer",
+            "description": "Tolsen Claw Hammer 25101. Demo catalog entry; specifications are indicative.",
+            "attributes": {},
+            "compatibility": [],
+            "included_components": [],
+            "safety_info": null,
+            "warranty": null,
+            "ph_specs": {},
+            "synonyms": [
+                "martilyo",
+                "hammer"
+            ],
+            "status": "approved",
+            "images": [
+                {
+                    "url": "/demo-images/hand-tools.svg",
+                    "alt": "Claw Hammer 25101 (demo image)",
+                    "is_primary": true
+                }
+            ],
+            "min_price_cents": 27000,
+            "max_price_cents": 27000,
+            "store_count": 1,
+            "relevance": 0.167,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "category": {
+                "id": 1,
+                "slug": "hammers",
+                "name": "Hammers"
+            },
+            "category_id": 1,
+            "brand": "Stanley",
+            "manufacturer": "Stanley",
+            "name": "Claw Hammer 51-188",
+            "model_number": "51-188",
+            "product_type": "Claw hammer",
+            "description": "Stanley Claw Hammer 51-188. Demo catalog entry; specifications are indicative.",
+            "attributes": {},
+            "compatibility": [],
+            "included_components": [],
+            "safety_info": null,
+            "warranty": null,
+            "ph_specs": {},
+            "synonyms": [
+                "martilyo",
+                "hammer"
+            ],
+            "status": "approved",
+            "images": [
+                {
+                    "url": "/demo-images/hand-tools.svg",
+                    "alt": "Claw Hammer 51-188 (demo image)",
+                    "is_primary": true
+                }
+            ],
+            "min_price_cents": 33500,
+            "max_price_cents": 40000,
+            "store_count": 5,
+            "relevance": 0.135,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/public/search?page=1",
+        "last": "http://localhost:8000/api/v1/public/search?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/public/search?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/public/search",
+        "per_page": 20,
+        "to": 9,
+        "total": 9
+    },
+    "meta_extra": {
+        "server_time": "2026-01-01T00:00:00+00:00"
+    }
+}

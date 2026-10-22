@@ -1,0 +1,68 @@
+{
+    "entity": "store",
+    "items": [
+        {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Mabolo Branch",
+            "address_line": "118 Juan Luna Ave",
+            "barangay": "Mabolo",
+            "city": "Cebu City",
+            "province": "Cebu",
+            "postal_code": "6000",
+            "lat": 10.3175,
+            "lng": 123.914,
+            "phone": "+63322345001",
+            "email": "dch-mb@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "08:00",
+                    "12:00"
+                ],
+                "mon-sat": [
+                    "07:30",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Mandaue Branch",
+            "address_line": "45 A. Soriano Ave",
+            "barangay": "Centro",
+            "city": "Mandaue City",
+            "province": "Cebu",
+            "postal_code": "6014",
+            "lat": 10.3365,
+            "lng": 123.942,
+            "phone": "+63322345002",
+            "email": "dch-md@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "08:00",
+                    "12:00"
+                ],
+                "mon-sat": [
+                    "07:30",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": false,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3365,123.942",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

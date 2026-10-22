@@ -69,6 +69,7 @@ class CatalogService
             ]);
         }
         foreach ($v['barcodes'] ?? [] as $code => $type) {
+            preg_match('/^\d{8,14}$/', (string) $code) || throw ApiException::invalid('invalid_barcode', "Barcode $code must be 8 to 14 digits.");
             ProductBarcode::create(['variant_id' => $variant->id, 'code' => (string) $code, 'type' => $type]);
         }
         foreach (array_filter([$v['model_number'] ?? null, $v['part_number'] ?? null]) as $sku) {

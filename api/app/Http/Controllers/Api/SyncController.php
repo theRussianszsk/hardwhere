@@ -41,7 +41,7 @@ class SyncController extends Controller
     public function changes(Request $request, string $kind): JsonResponse
     {
         [$ctx, $userId] = $this->actor($kind, $request);
-        $limit = max(1, min(500, (int) $request->query('limit', config('hardwhere.sync.page_size'))));
+        $limit = max(1, min($kind === 'public' ? 100 : 500, (int) $request->query('limit', config('hardwhere.sync.page_size'))));
         $result = $this->feed->since(SyncProjector::audiences($kind, $ctx?->tenantId, $userId), (string) $request->query('cursor', ChangeFeed::START), $limit);
 
         $allowed = SyncProjector::ENTITIES[$kind];

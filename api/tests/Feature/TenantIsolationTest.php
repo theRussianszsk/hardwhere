@@ -3,7 +3,6 @@
 use App\Enums\TenantRole;
 use App\Models\InventoryItem;
 use App\Models\InventoryLocation;
-use App\Models\Sale;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +80,7 @@ it('scopes Eloquent queries to the bound tenant as defense in depth', function (
     TenantContext::bind(World::ctx($this->b['tenant'], $this->b['owner'], TenantRole::Owner));
     expect(InventoryItem::query()->pluck('id')->all())->toBe([$this->ib['item']->id])
         ->and(InventoryItem::query()->find($this->ia['item']->id))->toBeNull()
-        ->and(InventoryItem::query()->forTenant($this->a['tenant']->id)->count())->toBe(1); // explicit forTenant is the deliberate, auditable opt-out
+        ->and(InventoryItem::query()->forTenant($this->a['tenant']->id)->count())->toBe(0); // asking for another tenant while a context is bound yields nothing (no opt-out)
     TenantContext::bind(null);
 
     expect(fn () => InventoryLocation::create(['store_id' => $this->a['store']->id, 'name' => 'X', 'code' => 'X']))->toThrow(LogicException::class);

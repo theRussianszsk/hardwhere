@@ -1,0 +1,77 @@
+{
+    "entity": "inventory_item",
+    "items": [
+        {
+            "id": 1,
+            "variant_id": 1,
+            "sku": "DCH-GSB13",
+            "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+            "brand": "Bosch",
+            "product_name": "Impact Drill GSB 13 RE",
+            "barcodes": [
+                "3161921000139"
+            ],
+            "reorder_threshold": 1,
+            "track_stock": true,
+            "default_location_id": 1,
+            "on_hand": 4,
+            "reserved": 0,
+            "available": 4,
+            "low_stock": false,
+            "locations": [
+                {
+                    "location_id": 1,
+                    "on_hand": 4,
+                    "reserved": 0
+                }
+            ],
+            "cost_cents": 309675,
+            "supplier_id": 1,
+            "row_version": 3,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "variant_id": 1,
+            "sku": "DCH-GWS060",
+            "name": "Bosch GWS 060 Angle Grinder 4\", 670W",
+            "brand": "Bosch",
+            "product_name": "Angle Grinder GWS 060 4\"",
+            "barcodes": [
+                "3161921006063"
+            ],
+            "reorder_threshold": 2,
+            "track_stock": true,
+            "default_location_id": 1,
+            "on_hand": 8,
+            "reserved": 0,
+            "available": 8,
+            "low_stock": false,
+            "locations": [
+                {
+                    "location_id": 1,
+                    "on_hand": 0,
+                    "reserved": 0
+                },
+                {
+                    "location_id": 1,
+                    "on_hand": 8,
+                    "reserved": 0
+                }
+            ],
+            "cost_cents": 187400,
+            "supplier_id": 1,
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

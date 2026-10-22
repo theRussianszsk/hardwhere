@@ -12,6 +12,7 @@ use App\Models\Tenant;
 use App\Models\TenantListing;
 use App\Models\TenantMembership;
 use App\Models\User;
+use App\Services\CatalogService;
 use App\Services\InventoryService;
 use App\Tenancy\TenantContext;
 use Database\Seeders\CatalogSeeder;
@@ -21,7 +22,7 @@ final class World
 {
     public static function catalog(): array
     {
-        app(CatalogSeeder::class)->seedCatalog(app(\App\Services\CatalogService::class), coreOnly: true);
+        app(CatalogSeeder::class)->seedCatalog(app(CatalogService::class), coreOnly: true);
 
         return CatalogSeeder::$refs;
     }

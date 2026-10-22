@@ -1,0 +1,185 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "order_no": "HW-000001",
+            "status": "reserved",
+            "fulfillment_type": "pickup",
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Mabolo Branch",
+                "address_line": "118 Juan Luna Ave",
+                "barangay": "Mabolo",
+                "city": "Cebu City",
+                "province": "Cebu",
+                "postal_code": "6000",
+                "lat": 10.3175,
+                "lng": 123.914,
+                "phone": "+63322345001",
+                "email": "dch-mb@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "08:00",
+                        "12:00"
+                    ],
+                    "mon-sat": [
+                        "07:30",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "store_id": 1,
+            "subtotal_cents": 27000,
+            "delivery_fee_cents": 0,
+            "total_cents": 27000,
+            "contact_name": "Ana",
+            "contact_phone": "+639171230001",
+            "delivery_address": null,
+            "notes": null,
+            "placed_at": "2026-01-01T00:00:00+00:00",
+            "confirmed_at": null,
+            "ready_at": null,
+            "fulfilled_at": null,
+            "cancelled_at": null,
+            "cancel_reason": null,
+            "reservation": {
+                "status": "active",
+                "expires_at": "2026-01-01T00:00:00+00:00"
+            },
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-TL25101",
+                    "name": "Tolsen Claw Hammer 25101 16oz fiberglass handle",
+                    "quantity": 1,
+                    "unit_price_cents": 27000,
+                    "line_total_cents": 27000
+                }
+            ],
+            "customer_can_cancel": true,
+            "next_statuses": [
+                "confirmed",
+                "cancelled"
+            ],
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "order_no": "HW-000001",
+            "status": "reserved",
+            "fulfillment_type": "pickup",
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Mabolo Branch",
+                "address_line": "118 Juan Luna Ave",
+                "barangay": "Mabolo",
+                "city": "Cebu City",
+                "province": "Cebu",
+                "postal_code": "6000",
+                "lat": 10.3175,
+                "lng": 123.914,
+                "phone": "+63322345001",
+                "email": "dch-mb@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "08:00",
+                        "12:00"
+                    ],
+                    "mon-sat": [
+                        "07:30",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "store_id": 1,
+            "subtotal_cents": 62500,
+            "delivery_fee_cents": 0,
+            "total_cents": 62500,
+            "contact_name": "Ana Reyes",
+            "contact_phone": "+639171230001",
+            "delivery_address": null,
+            "notes": null,
+            "placed_at": "2026-01-01T00:00:00+00:00",
+            "confirmed_at": null,
+            "ready_at": null,
+            "fulfilled_at": null,
+            "cancelled_at": null,
+            "cancel_reason": null,
+            "reservation": {
+                "status": "active",
+                "expires_at": "2026-01-01T00:00:00+00:00"
+            },
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-LED9WD",
+                    "name": "Philips LED bulb 9W E27 daylight",
+                    "quantity": 4,
+                    "unit_price_cents": 9750,
+                    "line_total_cents": 39000
+                },
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-TAPE5",
+                    "name": "Stanley PowerLock tape measure 5m",
+                    "quantity": 1,
+                    "unit_price_cents": 23500,
+                    "line_total_cents": 23500
+                }
+            ],
+            "customer_can_cancel": true,
+            "next_statuses": [
+                "confirmed",
+                "cancelled"
+            ],
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/customer/orders?page=1",
+        "last": "http://localhost:8000/api/v1/customer/orders?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/customer/orders?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/customer/orders",
+        "per_page": 25,
+        "to": 4,
+        "total": 4
+    }
+}

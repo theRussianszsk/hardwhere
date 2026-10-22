@@ -10,7 +10,6 @@ use App\Models\ReservationLine;
 use App\Models\TenantListing;
 use App\Models\User;
 use App\Support\ApiException;
-use Illuminate\Support\Facades\DB;
 
 /** Marketplace ordering. Every order atomically reserves stock; there is no "soft" order that holds nothing. */
 class OrderService

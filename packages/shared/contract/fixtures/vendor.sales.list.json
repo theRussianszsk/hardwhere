@@ -1,0 +1,125 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "receipt_no": "REC-000001",
+            "store_id": 1,
+            "status": "completed",
+            "cashier_id": 1,
+            "subtotal_cents": 77300,
+            "discount_cents": 2520,
+            "vat_cents": 8012,
+            "total_cents": 74780,
+            "payment_method": "cash",
+            "payment_reference": null,
+            "tendered_cents": 100000,
+            "change_cents": 25220,
+            "customer_name": null,
+            "customer_phone": null,
+            "completed_at": "2026-01-01T00:00:00+00:00",
+            "voided_at": null,
+            "void_reason": null,
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-NAIL3",
+                    "name": "Common wire nail 3\" (per kg)",
+                    "quantity": 6,
+                    "unit_price_cents": 8400,
+                    "discount_cents": 2520,
+                    "vat_cents": 5130,
+                    "line_total_cents": 47880,
+                    "returned_quantity": 0
+                },
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-PVC12",
+                    "name": "Neltex PVC pipe 1/2\" x 3m",
+                    "quantity": 1,
+                    "unit_price_cents": 12500,
+                    "discount_cents": 0,
+                    "vat_cents": 1339,
+                    "line_total_cents": 12500,
+                    "returned_quantity": 0
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "receipt_no": "REC-000001",
+            "store_id": 1,
+            "status": "completed",
+            "cashier_id": 1,
+            "subtotal_cents": 127850,
+            "discount_cents": 0,
+            "vat_cents": 13698,
+            "total_cents": 127850,
+            "payment_method": "gcash",
+            "payment_reference": "GC0731815785",
+            "tendered_cents": null,
+            "change_cents": 0,
+            "customer_name": null,
+            "customer_phone": null,
+            "completed_at": "2026-01-01T00:00:00+00:00",
+            "voided_at": null,
+            "void_reason": null,
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-PVC12",
+                    "name": "Neltex PVC pipe 1/2\" x 3m",
+                    "quantity": 1,
+                    "unit_price_cents": 12500,
+                    "discount_cents": 0,
+                    "vat_cents": 1339,
+                    "line_total_cents": 12500,
+                    "returned_quantity": 0
+                },
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-TEFLON",
+                    "name": "Teflon tape 1/2\" x 10m",
+                    "quantity": 3,
+                    "unit_price_cents": 2450,
+                    "discount_cents": 0,
+                    "vat_cents": 788,
+                    "line_total_cents": 7350,
+                    "returned_quantity": 0
+                }
+            ]
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/sales?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/sales?page=8",
+        "prev": null,
+        "next": "http://localhost:8000/api/v1/vendor/sales?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 8,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/sales?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/sales",
+        "per_page": 25,
+        "to": 25,
+        "total": 195
+    }
+}

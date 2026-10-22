@@ -1,0 +1,91 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "variant_id": 1,
+            "sku": "DCH-ADJW10",
+            "name": "Tolsen adjustable wrench 10\"",
+            "brand": "Tolsen",
+            "product_name": "Adjustable Wrench",
+            "barcodes": [
+                "4809900000150"
+            ],
+            "reorder_threshold": 7,
+            "track_stock": true,
+            "default_location_id": 1,
+            "on_hand": 14,
+            "reserved": 0,
+            "available": 14,
+            "low_stock": false,
+            "locations": [
+                {
+                    "location_id": 1,
+                    "on_hand": 14,
+                    "reserved": 0
+                }
+            ],
+            "cost_cents": 29650,
+            "supplier_id": 1,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BALLV12",
+            "name": "PVC ball valve 1/2\"",
+            "brand": null,
+            "product_name": "PVC Ball Valve",
+            "barcodes": [],
+            "reorder_threshold": 7,
+            "track_stock": true,
+            "default_location_id": 1,
+            "on_hand": 9,
+            "reserved": 0,
+            "available": 9,
+            "low_stock": false,
+            "locations": [
+                {
+                    "location_id": 1,
+                    "on_hand": 9,
+                    "reserved": 0
+                }
+            ],
+            "cost_cents": 6650,
+            "supplier_id": 1,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/inventory?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/inventory?page=41",
+        "prev": null,
+        "next": "http://localhost:8000/api/v1/vendor/inventory?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 41,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/inventory?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/inventory",
+        "per_page": 3,
+        "to": 3,
+        "total": 122
+    }
+}

@@ -1,0 +1,126 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "order_no": "HW-000001",
+            "status": "confirmed",
+            "fulfillment_type": "pickup",
+            "store_id": 1,
+            "subtotal_cents": 75500,
+            "delivery_fee_cents": 0,
+            "total_cents": 75500,
+            "contact_name": "Rico Villarin (electrician)",
+            "contact_phone": "+639171230004",
+            "delivery_address": null,
+            "notes": null,
+            "placed_at": "2026-01-01T00:00:00+00:00",
+            "confirmed_at": "2026-01-01T00:00:00+00:00",
+            "ready_at": null,
+            "fulfilled_at": null,
+            "cancelled_at": null,
+            "cancel_reason": null,
+            "reservation": {
+                "status": "active",
+                "expires_at": "2026-01-01T00:00:00+00:00"
+            },
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-BRK30",
+                    "name": "Royu circuit breaker 2-pole 30A",
+                    "quantity": 1,
+                    "unit_price_cents": 36500,
+                    "line_total_cents": 36500
+                },
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-SW2G",
+                    "name": "Panasonic wall switch 2-gang",
+                    "quantity": 2,
+                    "unit_price_cents": 19500,
+                    "line_total_cents": 39000
+                }
+            ],
+            "customer_can_cancel": true,
+            "next_statuses": [
+                "preparing",
+                "cancelled"
+            ],
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "order_no": "HW-000001",
+            "status": "expired",
+            "fulfillment_type": "pickup",
+            "store_id": 1,
+            "subtotal_cents": 27500,
+            "delivery_fee_cents": 0,
+            "total_cents": 27500,
+            "contact_name": "Liza Gonzaga",
+            "contact_phone": "+639171230005",
+            "delivery_address": null,
+            "notes": null,
+            "placed_at": "2026-01-01T00:00:00+00:00",
+            "confirmed_at": null,
+            "ready_at": null,
+            "fulfilled_at": null,
+            "cancelled_at": "2026-01-01T00:00:00+00:00",
+            "cancel_reason": null,
+            "reservation": {
+                "status": "expired",
+                "expires_at": "2026-01-01T00:00:00+00:00"
+            },
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "variant_id": 1,
+                    "sku": "DCH-PADLOCK40",
+                    "name": "Brass padlock 40mm, 3 keys",
+                    "quantity": 1,
+                    "unit_price_cents": 27500,
+                    "line_total_cents": 27500
+                }
+            ],
+            "customer_can_cancel": false,
+            "next_statuses": [],
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/orders?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/orders?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/orders?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/orders",
+        "per_page": 25,
+        "to": 6,
+        "total": 6
+    }
+}

@@ -78,7 +78,7 @@ it('produces a demo data set that obeys the stock, tenancy, catalog and AI rules
     expect(AiAnalysis::query()->where('is_mock', false)->exists())->toBeFalse();
     expect(DB::table('ai_decisions')->pluck('decision')->sort()->values()->all())->toBe(['created_candidate', 'rejected', 'selected_variant']);
     expect(AiAnalysis::query()->where('classification', 'insufficient_confidence')->exists())->toBeTrue()
-        ->and(AiAnalysis::query()->where('classification', 'likely_variant')->exists())->toBeTrue();
+        ->and(DB::table('ai_match_candidates')->where('classification', 'likely_variant')->exists())->toBeTrue(); // e.g. HP1630 offered as a variant of the photographed HP1630K
 
     // the tenant-submitted candidate stays private to its tenant until approved
     $candidate = Product::query()->where('status', 'candidate')->sole();

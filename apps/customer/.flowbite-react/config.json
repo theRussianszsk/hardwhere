@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/flowbite-react/schema.json",
+  "components": [
+    "Alert",
+    "Badge",
+    "Button",
+    "HelperText",
+    "Label",
+    "Modal",
+    "Select",
+    "Spinner",
+    "TextInput",
+    "Textarea",
+    "Toast"
+  ],
+  "dark": true,
+  "path": "src/components",
+  "prefix": "",
+  "rsc": true,
+  "tsx": true,
+  "version": 4
+}

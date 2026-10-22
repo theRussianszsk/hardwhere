@@ -144,7 +144,7 @@ return [
                 ['DCD771-BARE', 'DeWalt DCD771 18V Cordless Drill Driver, tool only', 'DCD771N', ['voltage_v' => 18, 'kit' => 'bare tool'], 1, 'pc', '885911100772', 5200]]],
         ['cat' => 'drills', 'brand' => 'Black+Decker', 'name' => 'Cordless Drill BCD001', 'model' => 'BCD001', 'type' => 'Cordless drill', 'syn' => ['cordless drill', 'drill driver'], 'v' => [
             ['BCD001-12V', 'Black+Decker BCD001 Cordless Drill 12V', 'BCD001', ['voltage_v' => 12], 1, 'pc', '885911200121', 3300],
-            ['BCD001-20V', 'Black+Decker BCD001 Cordless Drill 20V', 'BCD001-20', ['voltage_v' => 20], 1, 'pc', '885911200201', 4100]]],
+            ['BCD001-20V', 'Black+Decker BCD001 Cordless Drill 20V', 'BCD001', ['voltage_v' => 20], 1, 'pc', '885911200201', 4100]]],
         ['cat' => 'drills', 'brand' => 'Ingco', 'name' => 'Impact Drill 13mm', 'model' => null, 'type' => 'Impact drill', 'syn' => ['budget drill', 'hammer drill'],
             'ph' => $tools220, 'warranty' => '6 months', 'safety' => $toolSafety, 'v' => [
                 ['ING-ID650', 'Ingco Impact Drill 13mm 650W', null, ['voltage_v' => 220, 'wattage_w' => 650], 1, 'pc', true, 1450]]],

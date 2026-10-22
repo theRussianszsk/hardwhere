@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
  */
 class ReservationService
 {
+    /** Statuses whose reservation may lapse on its own. 'preparing' is owned by the store: it completes or cancels it. */
+    private const EXPIRABLE = ['reserved', 'confirmed', 'ready_for_pickup'];
+
     public function __construct(private StockService $stock, private SyncRecorder $sync, private AuditLogger $audit) {}
 
     /** Move an order along the state machine, applying the stock effect that goes with the new state. */
@@ -58,7 +61,7 @@ class ReservationService
             $this->audit->record("order.{$to->value}", $order->tenant_id, $order, ['from' => $from->value, 'reason' => $reason], $actorUserId);
 
             return $order;
-        });
+        }, 3);
     }
 
     /**
@@ -84,6 +87,7 @@ class ReservationService
     public function expireDue(int $limit = 200): int
     {
         $ids = Reservation::query()->withoutGlobalScopes()->where('status', 'active')->where('expires_at', '<=', now())
+            ->whereIn('order_id', Order::query()->withoutGlobalScopes()->whereIn('status', self::EXPIRABLE)->select('id'))
             ->orderBy('expires_at')->limit($limit)->pluck('order_id');
 
         return $ids->filter(fn ($orderId) => $this->tryExpire($orderId))->count();
@@ -97,6 +101,7 @@ class ReservationService
     public function expireDueForItems(int $tenantId, array $itemIds): void
     {
         Reservation::query()->withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'active')->where('expires_at', '<=', now())
+            ->whereIn('order_id', Order::query()->withoutGlobalScopes()->whereIn('status', self::EXPIRABLE)->select('id'))
             ->whereIn('id', fn ($q) => $q->select('reservation_id')->from('reservation_lines')->whereIn('inventory_item_id', $itemIds))
             ->orderBy('expires_at')->limit(50)->pluck('order_id')->each(fn ($orderId) => $this->tryExpire($orderId));
     }

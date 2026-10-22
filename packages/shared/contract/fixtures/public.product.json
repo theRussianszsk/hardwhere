@@ -1,0 +1,59 @@
+{
+    "data": {
+        "id": 1,
+        "category": {
+            "id": 1,
+            "slug": "hammers",
+            "name": "Hammers"
+        },
+        "category_id": 1,
+        "brand": "Tolsen",
+        "manufacturer": "Tolsen",
+        "name": "Claw Hammer 25101",
+        "model_number": "25101",
+        "product_type": "Claw hammer",
+        "description": "Tolsen Claw Hammer 25101. Demo catalog entry; specifications are indicative.",
+        "attributes": {},
+        "compatibility": [],
+        "included_components": [],
+        "safety_info": null,
+        "warranty": null,
+        "ph_specs": {},
+        "synonyms": [
+            "martilyo",
+            "hammer"
+        ],
+        "status": "approved",
+        "images": [
+            {
+                "url": "/demo-images/hand-tools.svg",
+                "alt": "Claw Hammer 25101 (demo image)",
+                "is_primary": true
+            }
+        ],
+        "variants": [
+            {
+                "id": 1,
+                "product_id": 1,
+                "name": "Tolsen Claw Hammer 25101 16oz fiberglass handle",
+                "model_number": "25101",
+                "part_number": null,
+                "attributes": {
+                    "weight_oz": 16
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "6922295251018",
+                        "type": "EAN13"
+                    }
+                ]
+            }
+        ],
+        "row_version": 1,
+        "updated_at": "2026-01-01T00:00:00+00:00"
+    }
+}

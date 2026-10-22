@@ -26,6 +26,7 @@ use App\Services\SyncRecorder;
 use App\Support\ApiException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 class TenantAdminController extends Controller
@@ -52,7 +53,7 @@ class TenantAdminController extends Controller
         ]]);
     }
 
-    public function stores(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function stores(): AnonymousResourceCollection
     {
         $ctx = $this->ctx();
 
@@ -128,6 +129,10 @@ class TenantAdminController extends Controller
             if (! $user) {
                 isset($d['name'], $d['password']) || throw ApiException::invalid('new_user_needs_name_and_password', 'A name and initial password are required for a new account.');
                 $user = User::create(['name' => $d['name'], 'email' => $d['email'], 'password' => $d['password']]);
+                $user->forceFill(['email_verified_at' => now()])->save(); // the owner supplied and vouches for this address
+            }
+            if (! $user->wasRecentlyCreated && $user->email_verified_at === null) {
+                throw ApiException::invalid('user_unverified', 'That account has not verified its email address, so it cannot be added to a business. Create a new account for them instead.');
             }
             if (TenantMembership::query()->where('tenant_id', $ctx->tenantId)->where('user_id', $user->id)->exists()) {
                 throw ApiException::conflict('already_member', 'This person is already on your team.');
@@ -146,6 +151,10 @@ class TenantAdminController extends Controller
         $ctx = $this->ctx();
         $m = TenantMembership::query()->where('tenant_id', $ctx->tenantId)->findOrFail($membership);
         $m->role === TenantRole::Owner->value && throw ApiException::forbidden('The owner role cannot be changed here.');
+        $sid = $request->validated('store_id');
+        if ($sid !== null && ! Store::query()->forTenant($ctx)->whereKey($sid)->exists()) {
+            throw ApiException::invalid('unknown_store', 'Unknown store.');
+        }
         $m->update(['role' => $request->validated('role'), 'store_id' => $request->validated('store_id')]);
         $this->audit->record('staff.updated', $ctx, $m, ['role' => $m->role]);
 
@@ -167,7 +176,7 @@ class TenantAdminController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function suppliers(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function suppliers(): AnonymousResourceCollection
     {
         return SupplierResource::collection(Supplier::query()->forTenant($this->ctx())->orderBy('name')->get());
     }

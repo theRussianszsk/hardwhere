@@ -1,0 +1,22 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Cebu Tools & Fasteners Wholesale",
+            "contact_name": "Rey Tan",
+            "phone": "+63322550101",
+            "email": null,
+            "lead_time_days": 3,
+            "notes": null
+        },
+        {
+            "id": 1,
+            "name": "Visayan Electrical Distributors",
+            "contact_name": "Nonoy Lim",
+            "phone": "+63322550102",
+            "email": null,
+            "lead_time_days": 2,
+            "notes": null
+        }
+    ]
+}

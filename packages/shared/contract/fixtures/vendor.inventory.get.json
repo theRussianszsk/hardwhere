@@ -1,0 +1,32 @@
+{
+    "data": {
+        "id": 1,
+        "variant_id": 1,
+        "sku": "DCH-ADJW10",
+        "name": "Tolsen adjustable wrench 10\"",
+        "brand": "Tolsen",
+        "product_name": "Adjustable Wrench",
+        "barcodes": [
+            "4809900000150"
+        ],
+        "reorder_threshold": 7,
+        "track_stock": true,
+        "default_location_id": 1,
+        "on_hand": 14,
+        "reserved": 0,
+        "available": 14,
+        "low_stock": false,
+        "locations": [
+            {
+                "location_id": 1,
+                "on_hand": 14,
+                "reserved": 0
+            }
+        ],
+        "cost_cents": 29650,
+        "supplier_id": 1,
+        "row_version": 1,
+        "updated_at": "2026-01-01T00:00:00+00:00",
+        "deleted_at": null
+    }
+}

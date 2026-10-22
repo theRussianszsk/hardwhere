@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
+/** @property int|null $tenant_id */
 trait BelongsToTenant
 {
     public static function bootBelongsToTenant(): void
@@ -26,6 +27,7 @@ trait BelongsToTenant
     {
         $id = $tenant instanceof TenantContext ? $tenant->tenantId : $tenant;
 
-        return $query->withoutGlobalScope(TenantScope::class)->where($this->getTable().'.tenant_id', $id);
+        // The TenantScope stays active on purpose: if a request context is bound, asking for another tenant yields nothing.
+        return $query->where($this->getTable().'.tenant_id', $id);
     }
 }

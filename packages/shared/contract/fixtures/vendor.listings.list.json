@@ -1,0 +1,137 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-ADJW10",
+            "title": "Tolsen adjustable wrench 10\"",
+            "title_override": null,
+            "description": null,
+            "price_cents": 41500,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 14,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Tolsen adjustable wrench 10\"",
+                "model_number": null,
+                "part_number": null,
+                "attributes": {
+                    "length_mm": 250
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": false,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "4809900000150",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Adjustable Wrench",
+                "brand": "Tolsen",
+                "category": "Wrenches & Sockets"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BALLV12",
+            "title": "PVC ball valve 1/2\"",
+            "title_override": null,
+            "description": null,
+            "price_cents": 9350,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 9,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "PVC ball valve 1/2\"",
+                "model_number": null,
+                "part_number": null,
+                "attributes": {
+                    "material": "pvc",
+                    "diameter_mm": 12.7
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": []
+            },
+            "product": {
+                "id": 1,
+                "name": "PVC Ball Valve",
+                "brand": null,
+                "category": "Valves & Faucets"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/listings?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/listings?page=49",
+        "prev": null,
+        "next": "http://localhost:8000/api/v1/vendor/listings?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 49,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/listings?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/listings",
+        "per_page": 3,
+        "to": 3,
+        "total": 145
+    }
+}

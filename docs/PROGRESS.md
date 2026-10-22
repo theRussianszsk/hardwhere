@@ -23,3 +23,10 @@
 
 ## Not verifiable on this machine
 No JDK/Android SDK/Xcode: APK/AAB and iOS builds are NOT built here. Gemma 4 live inference not run (no API key).
+
+## Update — mobile workspace milestone
+- npm workspaces (`apps/vendor`, `apps/customer`, `packages/shared`); `.npmrc` sets `legacy-peer-deps` because npm's resolver crashes on this peer graph.
+- Shared contract: `contract/endpoints.json` (65 endpoints, checked against the Laravel router both ways) + 44 real-response fixtures type-checked by `contract/check.ts` (`tsc` fails on server/client drift; verified with a negative test).
+- Capacitor Android + iOS (SPM) projects generated for both apps with distinct ids (`ph.hardwhere.vendor`, `ph.hardwhere.market`), 8 native plugins registered. **Never built or run**: no JDK/Android SDK/Xcode on this machine. Demo target is the browser at a phone viewport.
+- `GET /` on the API now returns a JSON descriptor instead of a 500 when the starter's Vite bundle is not built.
+- In progress (not in this commit): src/db, src/sync (SQLite + sync + outbox), src/session, src/platform, src/ui, src/react.

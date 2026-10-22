@@ -1,0 +1,20 @@
+{
+    "error": {
+        "code": "validation_failed",
+        "message": "Please check the highlighted fields.",
+        "fields": {
+            "items": [
+                "The items field is required."
+            ],
+            "payment": [
+                "The payment field is required."
+            ],
+            "payment.method": [
+                "The payment.method field is required."
+            ],
+            "payment.reference": [
+                "The payment.reference field is required unless payment.method is in cash."
+            ]
+        }
+    }
+}

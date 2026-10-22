@@ -1,0 +1,157 @@
+{
+    "entity": "listing",
+    "items": [
+        {
+            "id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "title": "Bosch GSB 13 RE Impact Drill 600W 220V",
+            "description": null,
+            "sku": "DCH-GSB13",
+            "price_cents": 396000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "availability": {
+                "status": "low_stock",
+                "quantity": 4
+            },
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Mabolo Branch",
+                "address_line": "118 Juan Luna Ave",
+                "barangay": "Mabolo",
+                "city": "Cebu City",
+                "province": "Cebu",
+                "postal_code": "6000",
+                "lat": 10.3175,
+                "lng": 123.914,
+                "phone": "+63322345001",
+                "email": "dch-mb@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "08:00",
+                        "12:00"
+                    ],
+                    "mon-sat": [
+                        "07:30",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+                "model_number": "GSB 13 RE",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 220,
+                    "wattage_w": 600
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921000139",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "title": "Bosch GWS 060 Angle Grinder 4\", 670W",
+            "description": null,
+            "sku": "DCH-GWS060",
+            "price_cents": 237000,
+            "sale_price_cents": 213000,
+            "currency": "PHP",
+            "uom": "pc",
+            "availability": {
+                "status": "in_stock",
+                "quantity": null
+            },
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Mabolo Branch",
+                "address_line": "118 Juan Luna Ave",
+                "barangay": "Mabolo",
+                "city": "Cebu City",
+                "province": "Cebu",
+                "postal_code": "6000",
+                "lat": 10.3175,
+                "lng": 123.914,
+                "phone": "+63322345001",
+                "email": "dch-mb@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "08:00",
+                        "12:00"
+                    ],
+                    "mon-sat": [
+                        "07:30",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GWS 060 Angle Grinder 4\", 670W",
+                "model_number": "GWS 060",
+                "part_number": null,
+                "attributes": {
+                    "disc_mm": 100,
+                    "voltage_v": 220,
+                    "wattage_w": 670
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921006063",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

@@ -1,0 +1,141 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BCD001-12V",
+            "title": "Black+Decker BCD001 Cordless Drill 12V",
+            "title_override": null,
+            "description": null,
+            "price_cents": 328000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 1,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Black+Decker BCD001 Cordless Drill 12V",
+                "model_number": "BCD001",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 12
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "8859112001212",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Cordless Drill BCD001",
+                "brand": "Black+Decker",
+                "category": "Drills & Rotary Hammers"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BCD001-20V",
+            "title": "Black+Decker BCD001 Cordless Drill 20V",
+            "title_override": null,
+            "description": null,
+            "price_cents": 423000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 48,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 0,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Black+Decker BCD001 Cordless Drill 20V",
+                "model_number": "BCD001",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 20
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": false,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "8859112002011",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Cordless Drill BCD001",
+                "brand": "Black+Decker",
+                "category": "Drills & Rotary Hammers"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/pos/search",
+        "per_page": 30,
+        "to": 8,
+        "total": 8
+    }
+}

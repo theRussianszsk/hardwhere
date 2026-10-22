@@ -1,0 +1,185 @@
+/*
+ * @hardwhere/shared UI styles — design tokens + utilities for Flowbite React 0.12 on Tailwind CSS 4.
+ *
+ * Each app's src/index.css must import this AFTER tailwind and the flowbite plugin (later :root rules win):
+ *
+ *   @import "tailwindcss";
+ *   @import "flowbite-react/plugin/tailwindcss";
+ *   @import "@hardwhere/shared/styles.css";
+ *   @source "../.flowbite-react/class-list.json";
+ *
+ * Also needed in each app:
+ *   - index.html viewport: `width=device-width, initial-scale=1, viewport-fit=cover` (otherwise safe-area insets are 0).
+ *   - .flowbite-react/config.json "components": at least UI_FLOWBITE_COMPONENTS from "@hardwhere/shared/ui" (flowbite-react only
+ *     scans the app folder, so classes of components used solely inside this package would otherwise be missing).
+ *
+ * How the theme works: Flowbite React 0.12 colours its components through the CSS variables --primary-50..900 and --gray-50..900.
+ * Re-defining them below re-skins every Flowbite component (Button, Modal, inputs...) to the hardware-store amber/orange brand and a
+ * slate neutral. Our own surfaces use the --hw-* tokens, which flip with the `dark` variant (system setting by default; class-based
+ * if the app redefines @custom-variant dark).
+ */
+
+/* Scan these components for Tailwind classes (path is relative to THIS file). */
+@source ".";
+
+/* ───────── Flowbite palette overrides ───────── */
+:root {
+  /* brand: orange. 600+ keep >= 4.5:1 with white text (Flowbite buttons use 600/700 backgrounds with white labels). */
+  --primary-50: #fff7ed;
+  --primary-100: #ffedd5;
+  --primary-200: #fed7aa;
+  --primary-300: #fdba74;
+  --primary-400: #fb923c;
+  --primary-500: #f97316;
+  --primary-600: #c2410c;
+  --primary-700: #9a3412;
+  --primary-800: #7c2d12;
+  --primary-900: #431407;
+
+  /* neutral: slate */
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+}
+
+/* ───────── app tokens (light; dark flips below) ───────── */
+:root {
+  --hw-canvas: #f8fafc;
+  --hw-surface: #ffffff;
+  --hw-surface-2: #e2e8f0;
+  --hw-ink: #0f172a;
+  --hw-ink-muted: #475569; /* 7.6:1 on white, 6.5:1 on surface-2 */
+  --hw-line: #cbd5e1;
+  --hw-brand-ink: #9a3412; /* brand-coloured TEXT; 7.3:1 on white */
+  --hw-focus: #1d4ed8;
+
+  --hw-success: #15803d;
+  --hw-success-soft: #dcfce7;
+  --hw-success-ink: #166534;
+  --hw-warn: #b45309;
+  --hw-warn-soft: #fef3c7;
+  --hw-warn-ink: #92400e;
+  --hw-danger: #b91c1c; /* white text on it: 6.5:1 */
+  --hw-danger-soft: #fee2e2;
+  --hw-danger-ink: #991b1b;
+  --hw-info: #1d4ed8;
+  --hw-info-soft: #dbeafe;
+  --hw-info-ink: #1e40af;
+
+  @variant dark {
+    --hw-canvas: #0f172a;
+    --hw-surface: #1e293b;
+    --hw-surface-2: #334155;
+    --hw-ink: #f1f5f9;
+    --hw-ink-muted: #cbd5e1;
+    --hw-line: #475569;
+    --hw-brand-ink: #fdba74;
+    --hw-focus: #93c5fd;
+
+    --hw-success-soft: #052e16;
+    --hw-success-ink: #86efac;
+    --hw-warn-soft: #451a03;
+    --hw-warn-ink: #fcd34d;
+    --hw-danger-soft: #450a0a;
+    --hw-danger-ink: #fca5a5;
+    --hw-info-soft: #172554;
+    --hw-info-ink: #93c5fd;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--hw-canvas);
+  --color-surface: var(--hw-surface);
+  --color-surface-2: var(--hw-surface-2);
+  --color-ink: var(--hw-ink);
+  --color-ink-muted: var(--hw-ink-muted);
+  --color-line: var(--hw-line);
+  --color-brand-ink: var(--hw-brand-ink);
+  --color-focus: var(--hw-focus);
+
+  --color-success: var(--hw-success);
+  --color-success-soft: var(--hw-success-soft);
+  --color-success-ink: var(--hw-success-ink);
+  --color-warn: var(--hw-warn);
+  --color-warn-soft: var(--hw-warn-soft);
+  --color-warn-ink: var(--hw-warn-ink);
+  --color-danger: var(--hw-danger);
+  --color-danger-soft: var(--hw-danger-soft);
+  --color-danger-ink: var(--hw-danger-ink);
+  --color-info: var(--hw-info);
+  --color-info-soft: var(--hw-info-soft);
+  --color-info-ink: var(--hw-info-ink);
+}
+
+@theme {
+  /* system fonts only: the apps must look right with no network */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+}
+
+/* ───────── utilities ───────── */
+/* WCAG 2.2 / platform guidance: tappable things are at least 44x44 px. */
+@utility touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ───────── base ───────── */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--hw-canvas);
+    color: var(--hw-ink);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+}
+
+/* Unlayered on purpose: it must beat Flowbite's `focus:outline-none`. The ring colour contrasts with both the page and orange buttons. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--hw-focus);
+  outline-offset: 2px;
+}
+
+/* Respect "reduce motion", but keep spinners turning: a frozen spinner looks like a hung app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+  *:not(.animate-spin),
+  *:not(.animate-spin)::before,
+  *:not(.animate-spin)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Flowbite's Badge wraps its children in a bare <span>; Tailwind makes <svg> a block, which would stack an icon above the label. */
+[data-testid="flowbite-badge"] > span { display: inline-flex; align-items: center; gap: 0.25rem; }

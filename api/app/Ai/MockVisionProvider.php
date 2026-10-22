@@ -4,10 +4,17 @@ namespace App\Ai;
 
 /**
  * DEMO PROVIDER. Returns canned, deterministic extractions; it never looks at the pixels. Every result is flagged is_mock=true
- * and surfaced in the UI as "Demo AI". Scenario = explicit `hint`, else a stable pick from the image hash.
+ * and surfaced in the UI as "Demo AI". Scenario = explicit `hint`, else a keyword in the uploaded file name, else "unrecognized" (no guess).
  */
 class MockVisionProvider implements VisionProvider
 {
+    /** Filename keywords that select a demo scenario when no explicit hint is sent (order matters: first match wins). */
+    private const FILENAME_HINTS = [
+        'hp1630k' => 'makita-hp1630k', 'hp1630' => 'makita-hp1630', 'makita' => 'makita-hp1630', 'gsb' => 'bosch-gsb13', 'bosch' => 'bosch-gsb13',
+        'stanley' => 'barcode-visible', 'hammer' => 'barcode-visible', 'tolsen' => 'conflicting-barcode', 'bcd001' => 'cordless-drill-12v',
+        'decker' => 'ambiguous-cordless-drill', 'tek' => 'unbarcoded-tek-screw', 'screw' => 'unbarcoded-tek-screw', 'foam' => 'unknown-product', 'blurry' => 'blurry',
+    ];
+
     /** @return array<string, array<string, mixed>> */
     public static function scenarios(): array
     {
@@ -23,8 +30,23 @@ class MockVisionProvider implements VisionProvider
             'cordless-drill-12v' => ['name' => 'Cordless drill 12V', 'brand' => 'Black+Decker', 'model' => 'BCD001', 'category' => 'Power Tools', 'attributes' => ['voltage_v' => 12], 'confidence' => $c(0.85, 0.85, 0.8), 'overall_confidence' => 0.84],
             'conflicting-barcode' => ['name' => 'Claw Hammer', 'brand' => 'Tolsen', 'model' => '25101', 'category' => 'Hand Tools', 'attributes' => [], 'barcode_text' => '4800000100017', 'confidence' => $c(0.7, 0.75, 0.7, 0.9, 0.5, 0.9), 'overall_confidence' => 0.75],
             'unknown-product' => ['name' => 'Expanding foam sealant 750ml', 'brand' => 'Kingfoam', 'model' => 'KF-750', 'category' => 'Building Supplies', 'attributes' => ['capacity_ml' => 750], 'confidence' => $c(0.8, 0.7, 0.7, 0.85, 0.7), 'overall_confidence' => 0.74],
+            // Anything else: the mock cannot see pixels, so it refuses to guess instead of showing a confident, wrong match.
+            'unrecognized' => ['name' => null, 'brand' => null, 'model' => null, 'category' => null, 'attributes' => [], 'confidence' => $c(0.0, 0.0, 0.0, 0.0, 0.0), 'overall_confidence' => 0.1,
+                'notes' => ['Demo AI only recognises its built-in demo photos, so it will not guess what is in this photo. Pick a demo photo, or connect a live model (AI_PROVIDER=gemma or openai).']],
             'blurry' => ['name' => null, 'brand' => null, 'model' => null, 'category' => null, 'attributes' => [], 'confidence' => $c(0.1, 0.0, 0.0, 0.1, 0.0), 'overall_confidence' => 0.12, 'image_sufficient' => false, 'notes' => ['Image is too blurry to read any label.']],
         ];
+    }
+
+    private static function fromFilename(?string $name): ?string
+    {
+        $n = strtolower((string) $name);
+        foreach (self::FILENAME_HINTS as $keyword => $scenario) {
+            if (str_contains($n, $keyword)) {
+                return $scenario;
+            }
+        }
+
+        return null;
     }
 
     public function analyze(string $imageBytes, string $mime, array $context = []): AnalysisResult
@@ -32,8 +54,7 @@ class MockVisionProvider implements VisionProvider
         $scenarios = self::scenarios();
         $key = $context['hint'] ?? null;
         if (! $key || ! isset($scenarios[$key])) {
-            $keys = array_keys($scenarios);
-            $key = $keys[hexdec(substr(hash('sha256', $imageBytes), 0, 8)) % count($keys)];
+            $key = self::fromFilename($context['filename'] ?? null) ?? 'unrecognized';
         }
 
         $s = $scenarios[$key] + ['pack_quantity' => null, 'barcode_text' => null, 'image_sufficient' => true, 'notes' => []];

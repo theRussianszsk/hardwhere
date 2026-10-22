@@ -9,6 +9,7 @@ use App\Http\Resources\OrderResource;
 use App\Models\MarketplaceCart;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Support\ApiException;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class OrderController extends Controller
     public function store(PlaceOrderRequest $request): JsonResponse
     {
         $d = $request->validated();
-        $d['contact_phone'] = Text::phone($d['contact_phone']) ?? throw \App\Support\ApiException::invalid('invalid_phone', 'Enter a Philippine mobile number, e.g. 0917 123 4567.');
+        $d['contact_phone'] = Text::phone($d['contact_phone']) ?? throw ApiException::invalid('invalid_phone', 'Enter a Philippine mobile number, e.g. 0917 123 4567.');
 
         [$order, $replayed] = $this->orders->place($request->user(), $d, $this->idempotencyKey($request));
         MarketplaceCart::query()->where('user_id', $request->user()->id)->first()?->items()->whereIn('listing_id', $order->items->pluck('listing_id'))->delete();

@@ -1,0 +1,123 @@
+{
+    "entity": "listing",
+    "items": [
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-GSB13",
+            "title": "Bosch GSB 13 RE Impact Drill 600W 220V",
+            "title_override": null,
+            "description": null,
+            "price_cents": 396000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 4,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+                "model_number": "GSB 13 RE",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 220,
+                    "wattage_w": 600
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921000139",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Impact Drill GSB 13 RE",
+                "brand": "Bosch",
+                "category": "Drills & Rotary Hammers"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-GWS060",
+            "title": "Bosch GWS 060 Angle Grinder 4\", 670W",
+            "title_override": null,
+            "description": null,
+            "price_cents": 237000,
+            "sale_price_cents": 213000,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 8,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GWS 060 Angle Grinder 4\", 670W",
+                "model_number": "GWS 060",
+                "part_number": null,
+                "attributes": {
+                    "disc_mm": 100,
+                    "voltage_v": 220,
+                    "wattage_w": 670
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921006063",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Angle Grinder GWS 060 4\"",
+                "brand": "Bosch",
+                "category": "Angle Grinders"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

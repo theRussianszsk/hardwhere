@@ -58,6 +58,7 @@ class SecurityController extends Controller
         $request->user()->update([
             'password' => $request->password,
         ]);
+        $request->user()->tokens()->delete(); // a changed password must end every API session
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

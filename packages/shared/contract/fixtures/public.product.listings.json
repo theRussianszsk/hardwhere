@@ -1,0 +1,80 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "title": "Tolsen Claw Hammer 25101 16oz fiberglass handle",
+            "description": null,
+            "sku": "DCH-TL25101",
+            "price_cents": 27000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "availability": {
+                "status": "in_stock",
+                "quantity": null
+            },
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Mabolo Branch",
+                "address_line": "118 Juan Luna Ave",
+                "barangay": "Mabolo",
+                "city": "Cebu City",
+                "province": "Cebu",
+                "postal_code": "6000",
+                "lat": 10.3175,
+                "lng": 123.914,
+                "phone": "+63322345001",
+                "email": "dch-mb@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "08:00",
+                        "12:00"
+                    ],
+                    "mon-sat": [
+                        "07:30",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=10.3175,123.914",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Tolsen Claw Hammer 25101 16oz fiberglass handle",
+                "model_number": "25101",
+                "part_number": null,
+                "attributes": {
+                    "weight_oz": 16
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "6922295251018",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "distance_km": 0.5,
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "meta": {
+        "server_time": "2026-01-01T00:00:00+00:00",
+        "count": 1
+    }
+}

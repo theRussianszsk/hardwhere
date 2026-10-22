@@ -27,7 +27,7 @@ class ImageIntake
             throw ApiException::invalid('image_too_large', 'The photo is too large. Maximum is '.(config('hardwhere.ai.max_image_kb') / 1024).' MB.');
         }
         [$w, $h] = $info;
-        if ($w < 64 || $h < 64 || $w * $h > 50_000_000) {
+        if ($w < 64 || $h < 64 || $w * $h > 16_000_000) {
             throw ApiException::invalid('invalid_image_size', 'The photo dimensions are not supported.');
         }
 

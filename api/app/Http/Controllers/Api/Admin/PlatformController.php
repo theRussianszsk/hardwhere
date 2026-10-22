@@ -11,11 +11,12 @@ use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Tenant;
+use App\Models\TenantListing;
 use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\CatalogService;
-use App\Support\ApiException;
+use App\Services\SyncRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +50,12 @@ class PlatformController extends Controller
     {
         $status = $request->validate(['status' => ['required', 'in:active,suspended']])['status'];
         $t = Tenant::query()->findOrFail($tenant);
-        $t->update(['status' => $status]);
+        DB::transaction(function () use ($t, $status) {
+            $t->update(['status' => $status]);
+            $sync = app(SyncRecorder::class);
+            TenantListing::query()->withoutGlobalScopes()->where('tenant_id', $t->id)->pluck('id')->each(fn ($id) => $sync->listing($t->id, $id));
+            Store::query()->withoutGlobalScopes()->where('tenant_id', $t->id)->pluck('id')->each(fn ($id) => $sync->publicEntity('store', $id));
+        });
         $this->audit->record("tenant.$status", $t->id, $t, [], $request->user()->id);
 
         return new TenantResource($t);

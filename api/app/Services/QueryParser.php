@@ -13,12 +13,12 @@ final class QueryParser
         $attrs = [];
         $max = $min = null;
 
-        $q = preg_replace_callback('/(?:under|below|less than|max(?:imum)?|up to|hanggang)\s*(?:₱|php|p)?\s*([\d,]+(?:\.\d+)?)/iu', function ($m) use (&$max) {
+        $q = preg_replace_callback('/(?:under|below|less than|max(?:imum)?|up to|hanggang)\s*(?:₱|php|p)?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:pesos?|php)\b)?/iu', function ($m) use (&$max) {
             $max = (int) round((float) str_replace(',', '', $m[1]) * 100);
 
             return ' ';
         }, $q);
-        $q = preg_replace_callback('/(?:over|above|more than|min(?:imum)?)\s*(?:₱|php|p)?\s*([\d,]+(?:\.\d+)?)/iu', function ($m) use (&$min) {
+        $q = preg_replace_callback('/(?:over|above|more than|min(?:imum)?)\s*(?:₱|php|p)?\s*([\d,]+(?:\.\d+)?)(?:\s*(?:pesos?|php)\b)?/iu', function ($m) use (&$min) {
             $min = (int) round((float) str_replace(',', '', $m[1]) * 100);
 
             return ' ';
