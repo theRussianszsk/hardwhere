@@ -47,6 +47,7 @@ import vListings from "./fixtures/vendor.listings.list.json";
 import vLocations from "./fixtures/vendor.locations.json";
 import vOrders from "./fixtures/vendor.orders.list.json";
 import vCheckout from "./fixtures/vendor.pos.checkout.json";
+import vCheckoutStatus from "./fixtures/vendor.pos.checkoutStatus.json";
 import vPosPhoto from "./fixtures/vendor.pos.photoSearch.json";
 import vPosSearch from "./fixtures/vendor.pos.search.json";
 import vSales from "./fixtures/vendor.sales.list.json";
@@ -88,6 +89,7 @@ export const contractChecks = [
   vOrders satisfies Wide<T.Paginated<T.OrderDto>>,
   vSales satisfies Wide<T.Paginated<T.SaleDto>>,
   vCheckout satisfies Wide<T.Wrapped<T.SaleDto>>,
+  vCheckoutStatus satisfies Wide<T.Wrapped<T.SaleDto>>,
   vPosSearch satisfies Wide<T.Paginated<T.TenantListingDto>>,
   vPosPhoto satisfies Wide<T.PosPhotoSearchResult>,
   vAiAnalysis satisfies Wide<T.Wrapped<T.AiAnalysisDto>>,

@@ -103,6 +103,12 @@ function createOutboxApi(port: SqlPort, scope: ScopeInfo, bus: ChangeBus, now: (
           WHERE id = ? AND scope_key = ? AND state IN ('queued','needs_review','rejected')`, [iso(now()), id, sk]);
       if (r.changes) emit();
     },
+    async markConfirmed(id, response) {
+      const r = await port.run(
+        `UPDATE outbox SET state = 'confirmed', response = ?, last_error = NULL, next_attempt_at = NULL, updated_at = ?
+          WHERE id = ? AND scope_key = ? AND state IN ('queued','needs_review','rejected')`, [JSON.stringify(response ?? null), iso(now()), id, sk]);
+      if (r.changes) emit();
+    },
     async discard(id) {
       // A row mid-send is never deleted: the handler may still reach the server. (Interrupted rows are recovered on app start.)
       const r = await port.run(`DELETE FROM outbox WHERE id = ? AND scope_key = ? AND state <> 'sending'`, [id, sk]);

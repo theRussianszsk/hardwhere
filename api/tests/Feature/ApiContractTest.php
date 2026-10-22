@@ -115,6 +115,7 @@ it('writes real server responses as contract fixtures for the TypeScript type-ch
     $listing = $this->getJson('/api/v1/vendor/pos/search?store_id='.$qc['id'].'&q=DCH-NL-3', $owner)->json('data.0');
     $rec('vendor.pos.checkout', $this->postJson('/api/v1/vendor/pos/checkout', ['store_id' => $qc['id'], 'items' => [['listing_id' => $listing['id'], 'quantity' => 100, 'expected_unit_price_cents' => $listing['price_cents']]],
         'payment' => ['method' => 'cash', 'tendered_cents' => 99999999]], $owner + idem('fx-sale')), 201);
+    $rec('vendor.pos.checkoutStatus', $this->getJson('/api/v1/vendor/pos/checkout/test-key-fx-sale', $owner));
     $rec('error.stock_unavailable', $this->postJson('/api/v1/vendor/pos/checkout', ['store_id' => $qc['id'], 'items' => [['listing_id' => $listing['id'], 'quantity' => 500]], 'payment' => ['method' => 'cash', 'tendered_cents' => 99999999]], $owner + idem('fx-sale2')), 409);
     $rec('error.validation', $this->postJson('/api/v1/vendor/pos/checkout', ['items' => []], $owner + idem('fx-bad')), 422);
     $rec('error.unauthenticated', $this->getJson('/api/v1/vendor/inventory'), 401);

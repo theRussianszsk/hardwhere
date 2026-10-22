@@ -154,6 +154,8 @@ export function createApiClient(opts: ApiClientOptions) {
     posPhotoSearch: (image: Blob, idempotencyKey: string, storeId?: number, hint?: string) =>
       call<T.PosPhotoSearchResult>("posPhotoSearch", { form: photoForm(image, { hint, store_id: storeId }), idempotencyKey }),
     posCheckout: (input: T.CheckoutInput, idempotencyKey: string) => call<T.Wrapped<T.SaleDto>>("posCheckout", { body: input, idempotencyKey }),
+    /** Read-only: the sale this cashier's checkout with `key` created, or a 404 ApiError. Never re-sends the sale. */
+    posCheckoutStatus: (key: string) => call<T.Wrapped<T.SaleDto>>("posCheckoutStatus", { params: { key } }),
     posRegisters: () => call<{ data: T.RegisterDto[] }>("posRegisters"),
     posSessionCurrent: () => call<{ data: T.PosSessionDto | null }>("posSessionCurrent"),
     posSessionOpen: (register_id: number, opening_float_cents = 0) => call<T.Wrapped<T.PosSessionDto>>("posSessionOpen", { body: { register_id, opening_float_cents } }),
