@@ -59,7 +59,7 @@ class InventoryController extends Controller
             $q->whereIn('inventory_items.variant_id', array_slice($variantIds, 0, 50));
         }
         if ($request->boolean('low_stock')) {
-            $q->whereRaw('(SELECT COALESCE(SUM(on_hand - reserved), 0) FROM stock_snapshots WHERE inventory_item_id = inventory_items.id) <= inventory_items.reorder_threshold');
+            $q->lowStock($ctx->storeId);
         }
         match ($request->query('sort')) {
             'updated' => $q->orderByDesc('inventory_items.updated_at'),

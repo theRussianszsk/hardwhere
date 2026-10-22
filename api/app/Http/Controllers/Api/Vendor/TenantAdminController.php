@@ -41,14 +41,17 @@ class TenantAdminController extends Controller
         $today = now('Asia/Manila')->startOfDay()->utc();
         $sales = Sale::query()->forTenant($ctx)->where('status', 'completed')->where('completed_at', '>=', $today)
             ->when($ctx->storeId, fn ($q) => $q->where('store_id', $ctx->storeId));
-        $lowStock = InventoryItem::query()->forTenant($ctx)->whereRaw('(SELECT COALESCE(SUM(on_hand - reserved), 0) FROM stock_snapshots WHERE inventory_item_id = inventory_items.id) <= reorder_threshold')->count();
+        // Store-bound users see their store's numbers, matching their (store-scoped) stock, order and listing lists.
+        $lowStock = InventoryItem::query()->forTenant($ctx)->lowStock($ctx->storeId)->count();
 
         return response()->json(['data' => [
             'sales_today_count' => (clone $sales)->count(),
             'sales_today_cents' => (int) (clone $sales)->sum('total_cents'),
             'low_stock_count' => $lowStock,
-            'open_orders' => $ctx->can('orders.view') ? Order::query()->forTenant($ctx)->whereIn('status', ['reserved', 'confirmed', 'preparing', 'ready_for_pickup'])->count() : null,
-            'published_listings' => TenantListing::query()->forTenant($ctx)->where('publication_status', 'published')->distinct()->count('inventory_item_id'),
+            'open_orders' => $ctx->can('orders.view') ? Order::query()->forTenant($ctx)->whereIn('status', ['reserved', 'confirmed', 'preparing', 'ready_for_pickup'])
+                ->when($ctx->storeId, fn ($q) => $q->where('store_id', $ctx->storeId))->count() : null,
+            'published_listings' => TenantListing::query()->forTenant($ctx)->where('publication_status', 'published')
+                ->when($ctx->storeId, fn ($q) => $q->where('store_id', $ctx->storeId))->distinct()->count('inventory_item_id'),
             'inventory_items' => InventoryItem::query()->forTenant($ctx)->count(),
         ]]);
     }

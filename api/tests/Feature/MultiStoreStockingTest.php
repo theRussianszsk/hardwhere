@@ -83,3 +83,16 @@ it('stocks a second store through AI intake confirmation too', function () {
     expect(TenantListing::query()->forTenant($this->w['ctx'])->where('store_id', $this->store2->id)->where('inventory_item_id', $hp['item']->id)->sole()->price_cents)->toBe(459900)
         ->and(StockSnapshot::query()->forTenant($this->w['ctx'])->where('inventory_item_id', $hp['item']->id)->where('location_id', $this->loc2->id)->sole()->on_hand)->toBe(5);
 });
+
+it('counts low stock, published listings and open orders for a store-bound user at their store only, like their lists', function () {
+    $this->postJson('/api/v1/vendor/inventory', ($this->body)(['quantity' => 1]), $this->owner + idem('s2'))->assertCreated(); // threshold 2: low here, not tenant-wide
+    World::member($this->w['tenant'], TenantRole::StoreManager, 'manager2@alpha.test', $this->store2);
+    $mgr = World::login($this, 'manager2@alpha.test', 'vendor', 'alpha');
+
+    $this->getJson('/api/v1/vendor/dashboard', $this->owner)->assertOk()->assertJsonPath('data.low_stock_count', 0)->assertJsonPath('data.published_listings', 1);
+    $this->getJson('/api/v1/vendor/inventory?low_stock=1', $this->owner)->assertOk()->assertJsonCount(0, 'data');
+
+    $this->getJson('/api/v1/vendor/dashboard', $mgr)->assertOk()->assertJsonPath('data.low_stock_count', 1)->assertJsonPath('data.published_listings', 0)->assertJsonPath('data.open_orders', 0);
+    $low = $this->getJson('/api/v1/vendor/inventory?low_stock=1', $mgr)->assertOk()->assertJsonCount(1, 'data');
+    expect($low->json('data.0.id'))->toBe($this->s['item']->id)->and($low->json('data.0.low_stock'))->toBeTrue()->and($low->json('data.0.available'))->toBe(1);
+});

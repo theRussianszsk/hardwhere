@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,5 +74,20 @@ class InventoryItem extends DomainModel
     public function mapping(): HasOne
     {
         return $this->hasOne(TenantProductMapping::class, 'inventory_item_id');
+    }
+
+    /**
+     * Available stock at or below the reorder threshold. With a store, only that store's locations count: the same numbers a
+     * store-bound user's item list flags as low (InventoryItemResource over store-filtered snapshots).
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeLowStock(Builder $query, ?int $storeId = null): Builder
+    {
+        $atStore = $storeId === null ? '' : ' AND ss.location_id IN (SELECT id FROM inventory_locations WHERE store_id = ?)';
+
+        return $query->whereRaw("(SELECT COALESCE(SUM(ss.on_hand - ss.reserved), 0) FROM stock_snapshots ss WHERE ss.inventory_item_id = inventory_items.id$atStore) <= inventory_items.reorder_threshold",
+            $storeId === null ? [] : [$storeId]);
     }
 }
