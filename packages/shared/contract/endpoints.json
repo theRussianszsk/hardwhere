@@ -52,6 +52,13 @@
    "app": "customer"
   },
   {
+   "name": "publicSearchFilters",
+   "method": "GET",
+   "path": "public/search/filters",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
    "name": "publicProduct",
    "method": "GET",
    "path": "public/products/{product}",
@@ -69,6 +76,13 @@
    "name": "publicListing",
    "method": "GET",
    "path": "public/listings/{listing}",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicStores",
+   "method": "GET",
+   "path": "public/stores",
    "auth": "none",
    "app": "customer"
   },

@@ -22,7 +22,11 @@ import pubListing from "./fixtures/public.listing.json";
 import pubProduct from "./fixtures/public.product.json";
 import pubProductListings from "./fixtures/public.product.listings.json";
 import pubSearch from "./fixtures/public.search.json";
+import pubSearchFilters from "./fixtures/public.search.filters.json";
+import pubSearchUnlisted from "./fixtures/public.search.unlisted.json";
 import pubStore from "./fixtures/public.store.json";
+import pubStores from "./fixtures/public.stores.json";
+import pubStoreListings from "./fixtures/public.store.listings.json";
 import syncPubChanges from "./fixtures/sync.public.changes.json";
 import syncPubListing from "./fixtures/sync.public.snapshot.listing.json";
 import syncPubProduct from "./fixtures/sync.public.snapshot.product.json";
@@ -59,11 +63,15 @@ export const contractChecks = [
   apiErr422 satisfies Wide<T.ApiErrorBody>,
   apiErr401 satisfies Wide<T.ApiErrorBody>,
   pubCategories satisfies Wide<{ data: T.CategoryDto[] }>,
-  pubSearch satisfies Wide<T.Paginated<T.ProductDto>>,
+  pubSearch satisfies Wide<T.Paginated<T.ProductDto> & { meta_extra?: T.SearchMetaExtra }>,
+  pubSearchFilters satisfies Wide<{ data: T.SearchFiltersDto; meta: { server_time: string } }>,
+  pubSearchUnlisted satisfies Wide<T.Paginated<T.ProductDto> & { meta_extra?: T.SearchMetaExtra }>,
   pubProduct satisfies Wide<T.Wrapped<T.ProductDto>>,
   pubProductListings satisfies Wide<{ data: T.PublicListingDto[]; meta: { server_time: string; count: number } }>,
   pubListing satisfies Wide<T.Wrapped<T.PublicListingDto>>,
   pubStore satisfies Wide<T.Wrapped<T.PublicStoreDto>>,
+  pubStores satisfies Wide<T.Paginated<T.PublicStoreDto> & { meta_extra?: { server_time: string } }>,
+  pubStoreListings satisfies Wide<T.Paginated<T.PublicListingDto>>,
   custCart satisfies Wide<T.Wrapped<T.CartDto>>,
   custOrderPlace satisfies Wide<T.Wrapped<T.OrderDto>>,
   custOrders satisfies Wide<T.Paginated<T.OrderDto>>,

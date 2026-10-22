@@ -5,7 +5,7 @@ Two mobile apps and one API for hardware stores:
 | | What | Stack |
 |---|---|---|
 | **Vendor app** (`apps/vendor`) | inventOS inventory + POSsible point-of-sale. Photograph an unbarcoded product, let AI propose the catalog match, confirm, stock it, sell it. | React 19, TypeScript (strict), Vite, Tailwind 4, Flowbite React, Capacitor |
-| **Customer app** (`apps/customer`) | Hardware Marketplace: search by text or photo, compare stores, prices and availability, get directions, reserve or order. | same |
+| **Customer app** (`apps/customer`) | Hardware Marketplace: quick text search, detailed search (brand, model, category, price, specs, distance, pickup/delivery) or photo search; results ranked by best match then the nearest store that sells it (and a plain "no registered store sells this" when none does); compare stores, browse a store directory and each store's products, get directions, reserve or order. | same |
 | **API** (`api/`) | One authenticated multi-tenant JSON API: tenancy, shared catalog, stock ledger, atomic checkout/reservations, AI intake, sync. | PHP 8.4+, Laravel 13, Eloquent, Sanctum, PostgreSQL (Neon) |
 | **Shared library** (`packages/shared`) | API types + client, SQLite layer, sync engine, outbox, session, UI kit. Frontend-safe only. | TypeScript |
 
@@ -183,7 +183,7 @@ checks it against the Laravel router **in both directions** (new routes must be 
 ## Tests
 
 ```bash
-scripts/dphp php artisan test                 # API: 247 tests on a real PostgreSQL database (hardwhere_test)
+scripts/dphp php artisan test                 # API: 253 tests on a real PostgreSQL database (hardwhere_test)
 scripts/dphp vendor/bin/pint --test           # style
 scripts/dphp vendor/bin/phpstan analyse       # level 5 + baseline
 npm test                                      # shared TS: SQLite migrations, partitioning, sync, outbox, session (185 tests)

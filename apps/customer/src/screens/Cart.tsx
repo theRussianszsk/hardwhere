@@ -60,7 +60,7 @@ export function CartScreen() {
         return (
           <Card key={storeId} className="space-y-3">
             <div>
-              <p className="text-sm font-bold">{s?.business_name}</p>
+              {s ? <Link to={`/store/${s.id}`} className="text-sm font-bold underline decoration-line underline-offset-2">{s.business_name}</Link> : <p className="text-sm font-bold">Store</p>}
               <p className="text-xs text-ink-muted">{s?.name}{s?.city ? ` · ${s.city}` : ""}</p>
             </div>
             <ul className="divide-y divide-line">

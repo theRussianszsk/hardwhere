@@ -20,6 +20,7 @@ class ProductResource extends JsonResource
             'min_price_cents' => $this->when(isset($this->resource->min_price_cents), fn () => (int) $this->resource->min_price_cents),
             'max_price_cents' => $this->when(isset($this->resource->max_price_cents), fn () => (int) $this->resource->max_price_cents),
             'store_count' => $this->when(isset($this->resource->store_count), fn () => (int) $this->resource->store_count),
+            'nearest_km' => $this->when(isset($this->resource->nearest_km), fn () => round((float) $this->resource->nearest_km, 1)),
             'relevance' => $this->when(isset($this->resource->relevance), fn () => round((float) $this->resource->relevance, 3)),
             'row_version' => $this->row_version, 'updated_at' => $this->updated_at?->toIso8601String(),
         ];

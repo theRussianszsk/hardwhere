@@ -17,6 +17,8 @@ class PublicStoreResource extends JsonResource
             'lat' => $this->lat, 'lng' => $this->lng, 'phone' => $this->phone, 'email' => $this->email, 'hours' => $this->hours ?: (object) [],
             'supports_pickup' => $this->supports_pickup, 'supports_delivery' => $this->supports_delivery,
             'directions_url' => "https://www.google.com/maps/dir/?api=1&destination=$dest", 'updated_at' => $this->updated_at?->toIso8601String(),
+            'listing_count' => $this->when(isset($this->resource->listing_count), fn () => (int) $this->resource->listing_count),
+            'distance_km' => $this->when(isset($this->resource->distance_km), fn () => round((float) $this->resource->distance_km, 1)),
         ];
     }
 }

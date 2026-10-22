@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { formatPeso, humanizeError, useCacheList, useNow, useOnlineQuery, useServices, useSyncStatus, formatAge, type CategoryDto, type ProductDto } from "@hardwhere/shared";
+import {
+  formatAge, formatKm, formatPeso, humanizeError, useCacheList, useNow, useOnlineQuery, useServices, useSyncStatus,
+  type CategoryDto, type ProductDto, type PublicSearchQuery, type SearchMetaExtra,
+} from "@hardwhere/shared";
 import { Btn, EmptyState, ErrorState, LoadingState, Notice, PhotoThumb, cx, inputCls } from "../components/ui";
 import { useOnline } from "../hooks";
+import { useShopperLocation } from "../location";
 
-interface Page { items: ProductDto[]; page: number; last: number; total: number; serverTime: string | null }
+interface Page { items: ProductDto[]; page: number; last: number; total: number; serverTime: string | null; unlisted: NonNullable<SearchMetaExtra["unlisted_matches"]> }
 
 export function priceRange(p: ProductDto): string {
   if (p.min_price_cents == null) return "See store prices";
@@ -23,26 +27,136 @@ export function ProductRow({ p, cached }: { p: ProductDto; cached?: boolean }) {
         ) : (
           <p className="mt-1 text-sm font-bold text-brand-ink">{priceRange(p)}</p>
         )}
-        {p.store_count != null && <p className="text-xs text-ink-muted">{p.store_count} {p.store_count === 1 ? "store" : "stores"}</p>}
+        <p className="flex flex-wrap gap-x-2 text-xs text-ink-muted">
+          {p.store_count != null && <span>{p.store_count} {p.store_count === 1 ? "store" : "stores"}</span>}
+          {p.nearest_km != null && <span className="font-medium text-info-ink">Nearest {formatKm(p.nearest_km)} away</span>}
+        </p>
       </div>
     </Link>
   );
 }
 
-export function SearchScreen() {
+/** Paged product search against the live API. Both the traditional and the detailed search use it; `key` changes restart from page 1. */
+export function useProductSearch(query: PublicSearchQuery, enabled = true) {
   const online = useOnline();
+  const { api } = useServices();
+  const [res, setRes] = useState<Page | null>(null);
+  const [loading, setLoading] = useState(enabled);
+  const [more, setMore] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
+  const seq = useRef(0);
+  const key = JSON.stringify(query);
+
+  const load = useCallback(async (page: number) => {
+    const my = ++seq.current;
+    if (page === 1) setLoading(true); else setMore(true);
+    try {
+      const r = await api.publicSearch({ ...(JSON.parse(key) as PublicSearchQuery), page, per_page: 20 });
+      if (my !== seq.current) return;
+      setFailed(null);
+      setRes((prev) => ({
+        items: page === 1 || !prev ? r.data : [...prev.items, ...r.data.filter((d) => !prev.items.some((x) => x.id === d.id))],
+        page: r.meta.current_page, last: r.meta.last_page, total: r.meta.total, serverTime: r.meta_extra?.server_time ?? new Date().toISOString(),
+        unlisted: r.meta_extra?.unlisted_matches ?? [],
+      }));
+    } catch (e) {
+      if (my !== seq.current) return;
+      setFailed(humanizeError(e));
+      if (page === 1) setRes(null);
+    } finally {
+      if (my === seq.current) { setLoading(false); setMore(false); }
+    }
+  }, [api, key]);
+
+  useEffect(() => {
+    if (!enabled) { seq.current++; setLoading(false); return; }
+    if (!online) { seq.current++; setFailed("offline"); setLoading(false); return; }
+    void load(1);
+  }, [load, online, enabled]);
+
+  return { res, loading, more, failed, load, online };
+}
+
+/** Top-level categories (live, else cached) in display order. */
+export function useCategories() {
+  const online = useOnline();
+  const cats = useOnlineQuery((api) => api.publicCategories(), [], { enabled: online });
+  const cachedCats = useCacheList<CategoryDto>("category", { orderBy: "id", limit: 100 });
+  const all = cats.data?.data ?? cachedCats.rows;
+  return { all, top: all.filter((c) => c.parent_id == null).sort((a, b) => a.sort - b.sort) };
+}
+
+/** "Use my location" control: once on, results rank by best match and then by the closest store that sells it. */
+export function LocationToggle({ compact }: { compact?: boolean }) {
+  const loc = useShopperLocation();
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Btn variant="secondary" className={cx(compact && "px-3 text-sm")} busy={loc.busy} onClick={() => void loc.locate()} aria-pressed={!!loc.geo}>
+          <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+          {loc.geo ? "Near me · refresh" : "Use my location"}
+        </Btn>
+        {loc.geo && <button type="button" onClick={loc.clear} className="touch-target text-sm text-ink-muted underline">Turn off</button>}
+      </div>
+      {loc.error && <Notice tone="warn">{loc.error}</Notice>}
+    </div>
+  );
+}
+
+/** Nothing on sale. Say so plainly, and name catalogue products that match but that no registered store sells yet. */
+export function NoSellers({ q, unlisted, onClear, filtered }: { q: string; unlisted: Page["unlisted"]; onClear: () => void; filtered?: boolean }) {
+  return (
+    <div className="space-y-3" aria-live="polite">
+      <EmptyState title={unlisted.length ? "No store is selling this yet" : "No matches"} action={<Btn variant="secondary" onClick={onClear}>{filtered ? "Clear filters" : "Clear search"}</Btn>}>
+        {unlisted.length
+          ? `We know ${unlisted.length === 1 ? "this product" : "these products"}${q ? ` for “${q}”` : ""}, but no registered store on Hardwhere is selling ${unlisted.length === 1 ? "it" : "them"} right now.`
+          : `No registered store is selling anything that matches${q ? ` “${q}”` : ""}${filtered ? " with these filters" : ""}. Try a brand, model number or a simpler word like “drill”.`}
+      </EmptyState>
+      {unlisted.length > 0 && (
+        <ul className="space-y-2" aria-label="Known products with no seller">
+          {unlisted.map((u) => (
+            <li key={u.id}>
+              <Link to={`/product/${u.id}`} className="flex items-center justify-between gap-2 rounded-card border border-dashed border-line bg-surface p-3">
+                <span className="min-w-0"><span className="block truncate text-sm font-semibold">{u.name}</span><span className="block truncate text-xs text-ink-muted">{[u.brand, u.model_number].filter(Boolean).join(" · ")}</span></span>
+                <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium text-ink-muted">Not sold yet</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export function ResultsList({ s, q, onClear, filtered }: { s: ReturnType<typeof useProductSearch>; q: string; onClear: () => void; filtered?: boolean }) {
+  const now = useNow(15_000);
+  const { res, loading, more, failed, load } = s;
+  if (loading && !res) return <LoadingState label="Searching…" />;
+  if (failed && !res) return <ErrorState message={failed} onRetry={() => void load(1)} />;
+  if (!res) return null;
+  if (res.items.length === 0) return <NoSellers q={q} unlisted={res.unlisted} onClear={onClear} filtered={filtered} />;
+  return (
+    <section aria-live="polite" aria-label="Search results" className="space-y-2">
+      <p className="text-xs text-ink-muted">
+        {res.total} {res.total === 1 ? "result" : "results"} · Updated {res.serverTime ? formatAge(res.serverTime, now) : "just now"}
+      </p>
+      {failed && <Notice tone="warn">Couldn't load more: {failed}</Notice>}
+      {res.items.map((p) => <ProductRow key={p.id} p={p} />)}
+      {res.page < res.last && <Btn variant="secondary" block busy={more} onClick={() => void load(res.page + 1)}>Load more</Btn>}
+    </section>
+  );
+}
+
+export function SearchScreen() {
   const [params, setParams] = useSearchParams();
   const initial = params.get("q") ?? "";
   const [text, setText] = useState(initial);
   const [q, setQ] = useState(initial);
   const [category, setCategory] = useState(params.get("cat") ?? "");
-  const [sort, setSort] = useState("relevance");
+  const [sort, setSort] = useState<"relevance" | "nearest" | "price_asc" | "price_desc">("relevance");
   const [inStock, setInStock] = useState(false);
-  const now = useNow(15_000);
-
-  const cats = useOnlineQuery((api) => api.publicCategories(), [], { enabled: online });
-  const cachedCats = useCacheList<CategoryDto>("category", { orderBy: "id", limit: 100 });
-  const categories = (cats.data?.data ?? cachedCats.rows).filter((c) => c.parent_id == null).sort((a, b) => a.sort - b.sort);
+  const { geo } = useShopperLocation();
+  const { top: categories } = useCategories();
 
   // debounce typing; keep the URL in sync so back-navigation restores the search
   useEffect(() => {
@@ -53,39 +167,10 @@ export function SearchScreen() {
     return () => clearTimeout(t);
   }, [text, category, setParams]);
 
-  const [res, setRes] = useState<Page | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [more, setMore] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
-  const seq = useRef(0);
-
-  const { api } = useServices();
-  const load = useCallback(async (page: number) => {
-    const my = ++seq.current;
-    if (page === 1) setLoading(true); else setMore(true);
-    try {
-      const r = await api.publicSearch({ q: q || undefined, category: category || undefined, sort: sort === "relevance" ? undefined : sort, in_stock: inStock || undefined, page, per_page: 20 });
-      if (my !== seq.current) return;
-      setFailed(null);
-      setRes((prev) => ({
-        items: page === 1 || !prev ? r.data : [...prev.items, ...r.data.filter((d) => !prev.items.some((x) => x.id === d.id))],
-        page: r.meta.current_page, last: r.meta.last_page, total: r.meta.total, serverTime: r.meta_extra?.server_time ?? new Date().toISOString(),
-      }));
-    } catch (e) {
-      if (my !== seq.current) return;
-      setFailed(humanizeError(e));
-      if (page === 1) setRes(null);
-    } finally {
-      if (my === seq.current) { setLoading(false); setMore(false); }
-    }
-  }, [api, q, category, sort, inStock]);
-
-  useEffect(() => {
-    if (!online) { seq.current++; setFailed("offline"); setLoading(false); return; }
-    void load(1);
-  }, [load, online]);
-
-  const showCache = failed !== null && (!res || !online);
+  const effectiveSort = sort === "nearest" && !geo ? "relevance" : sort;
+  const search = useProductSearch({ q: q || undefined, category: category || undefined, sort: effectiveSort === "relevance" ? undefined : effectiveSort, in_stock: inStock || undefined, ...(geo ?? {}) });
+  const showCache = search.failed !== null && (!search.res || !search.online);
+  const clear = () => { setText(""); setCategory(""); setInStock(false); };
 
   return (
     <div className="space-y-3 p-3">
@@ -96,6 +181,10 @@ export function SearchScreen() {
           <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 100-8 4 4 0 000 8z" /></svg>
         </Link>
       </form>
+      <div className="flex items-center justify-between gap-2">
+        <LocationToggle compact />
+        <Link to={`/search/detailed${q ? `?q=${encodeURIComponent(q)}` : ""}`} className="touch-target inline-flex items-center text-sm font-semibold text-brand-ink underline">Detailed search</Link>
+      </div>
 
       <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1" role="group" aria-label="Categories">
         {[{ slug: "", name: "All" }, ...categories].map((c) => (
@@ -110,34 +199,21 @@ export function SearchScreen() {
         <label className="flex touch-target items-center gap-2"><input type="checkbox" checked={inStock} onChange={(e) => setInStock(e.target.checked)} className="h-5 w-5 rounded" /> In stock only</label>
         <label className="ml-auto flex items-center gap-2">
           <span className="text-ink-muted">Sort</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value)} className="touch-target rounded-control border border-line bg-surface px-2 text-sm">
-            <option value="relevance">Best match</option>
+          <select value={effectiveSort} onChange={(e) => setSort(e.target.value as typeof sort)} className="touch-target rounded-control border border-line bg-surface px-2 text-sm">
+            <option value="relevance">{geo ? "Best match, nearest" : "Best match"}</option>
+            {geo && <option value="nearest">Nearest store</option>}
             <option value="price_asc">Price: low to high</option>
             <option value="price_desc">Price: high to low</option>
           </select>
         </label>
       </div>
+      {geo && effectiveSort === "relevance" && <p className="text-xs text-ink-muted">Best matches first; among similar matches, the closest store selling it comes first.</p>}
 
       {showCache ? (
-        <CachedResults q={q} category={category} offline={!online} reason={failed !== "offline" ? failed : null} />
-      ) : loading && !res ? (
-        <LoadingState label="Searching…" />
-      ) : failed && !res ? (
-        <ErrorState message={failed} onRetry={() => void load(1)} />
-      ) : res && res.items.length === 0 ? (
-        <EmptyState title="No matches" action={<Btn variant="secondary" onClick={() => { setText(""); setCategory(""); setInStock(false); }}>Clear search</Btn>}>
-          Nothing found{q ? ` for “${q}”` : ""}. Try a brand, model number or a simpler word like “drill”.
-        </EmptyState>
-      ) : res ? (
-        <section aria-live="polite" aria-label="Search results" className="space-y-2">
-          <p className="text-xs text-ink-muted">
-            {res.total} {res.total === 1 ? "result" : "results"} · Updated {res.serverTime ? formatAge(res.serverTime, now) : "just now"}
-          </p>
-          {failed && <Notice tone="warn">Couldn't load more: {failed}</Notice>}
-          {res.items.map((p) => <ProductRow key={p.id} p={p} />)}
-          {res.page < res.last && <Btn variant="secondary" block busy={more} onClick={() => void load(res.page + 1)}>Load more</Btn>}
-        </section>
-      ) : null}
+        <CachedResults q={q} category={category} offline={!search.online} reason={search.failed !== "offline" ? search.failed : null} />
+      ) : (
+        <ResultsList s={search} q={q} onClear={clear} />
+      )}
     </div>
   );
 }
@@ -160,4 +236,3 @@ function CachedResults({ q, category, offline, reason }: { q: string; category: 
     </section>
   );
 }
-

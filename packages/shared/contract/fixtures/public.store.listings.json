@@ -1,0 +1,179 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "title": "Bosch GSB 13 RE Impact Drill 600W 220V",
+            "description": null,
+            "sku": "DCH-DRL-001",
+            "price_cents": 395000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "availability": {
+                "status": "in_stock",
+                "quantity": null
+            },
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Kamuning Branch",
+                "address_line": "45 K-1st St, Kamuning",
+                "barangay": null,
+                "city": "Quezon City",
+                "province": "Metro Manila",
+                "postal_code": null,
+                "lat": 14.6285,
+                "lng": 121.0366,
+                "phone": "+6328123001",
+                "email": "dch-qc@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "09:00",
+                        "15:00"
+                    ],
+                    "mon-sat": [
+                        "08:00",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+                "model_number": "GSB 13 RE",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 220,
+                    "wattage_w": 600
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921000139",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "image_url": "/demo-images/power-tools.svg",
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "title": "Bosch GWS 060 Angle Grinder 4\", 670W",
+            "description": null,
+            "sku": "DCH-GRN-004",
+            "price_cents": 235000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "availability": {
+                "status": "in_stock",
+                "quantity": null
+            },
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "store": {
+                "id": 1,
+                "business_name": "Dela Cruz Hardware",
+                "name": "Kamuning Branch",
+                "address_line": "45 K-1st St, Kamuning",
+                "barangay": null,
+                "city": "Quezon City",
+                "province": "Metro Manila",
+                "postal_code": null,
+                "lat": 14.6285,
+                "lng": 121.0366,
+                "phone": "+6328123001",
+                "email": "dch-qc@hardwhere.test",
+                "hours": {
+                    "sun": [
+                        "09:00",
+                        "15:00"
+                    ],
+                    "mon-sat": [
+                        "08:00",
+                        "18:00"
+                    ]
+                },
+                "supports_pickup": true,
+                "supports_delivery": true,
+                "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            },
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GWS 060 Angle Grinder 4\", 670W",
+                "model_number": "GWS 060",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 220,
+                    "wattage_w": 670
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921006063",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "image_url": "/demo-images/power-tools.svg",
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/public/stores/25/listings?page=1",
+        "last": "http://localhost:8000/api/v1/public/stores/25/listings?page=10",
+        "prev": null,
+        "next": "http://localhost:8000/api/v1/public/stores/25/listings?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 10,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/public/stores/25/listings?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/public/stores/25/listings",
+        "per_page": 2,
+        "to": 2,
+        "total": 20
+    }
+}

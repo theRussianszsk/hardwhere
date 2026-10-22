@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { useToast } from "@hardwhere/shared/ui";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
-  PermissionDeniedError, callPhone, formatAge, formatKm, getApproxLocation, humanizeError, openDirections, useAuth, useCacheItem, useCacheList, useNow, useOnlineQuery, useSyncStatus,
+  callPhone, formatAge, formatKm, humanizeError, openDirections, useAuth, useCacheItem, useCacheList, useNow, useOnlineQuery, useSyncStatus,
   type Attrs, type ProductDto, type PublicListingDto, type PublicStoreDto, type VariantDto,
 } from "@hardwhere/shared";
 import { useCart } from "../cart";
 import { Btn, Card, EmptyState, ErrorState, LoadingState, Money, Notice, PhotoThumb, StockBadge, cx, inputCls } from "../components/ui";
 import { useOnline } from "../hooks";
 import { imgUrl } from "../config";
+import { useShopperLocation, type Geo } from "../location";
 
 const ATTR_LABEL: Record<string, string> = { voltage_v: "Voltage", wattage_w: "Power", chuck_mm: "Chuck size", weight_oz: "Weight", kit: "Kit", size: "Size", material: "Material", capacity_ml: "Capacity" };
 const ATTR_UNIT: Record<string, string> = { voltage_v: "V", wattage_w: "W", chuck_mm: " mm", weight_oz: " oz", capacity_ml: " ml" };
@@ -30,7 +31,7 @@ export function ProductScreen() {
   const cached = useCacheItem<ProductDto>("product", id);
   const product = prodQ.data?.data ?? cached.item;
 
-  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+  const { geo } = useShopperLocation();
   const listQ = useOnlineQuery((api) => api.publicProductListings(id, geo ?? undefined), [id, geo?.lat, geo?.lng], { enabled: online });
 
   if (!product) {
@@ -45,7 +46,6 @@ export function ProductScreen() {
       <ProductBody
         product={product}
         geo={geo}
-        setGeo={setGeo}
         listings={live ? listQ.data!.data : null}
         asOf={live ? listQ.data!.meta.server_time : null}
         loading={online && listQ.loading && !listQ.data}
@@ -88,7 +88,7 @@ function ProductHeader({ product }: { product: ProductDto }) {
 }
 
 function ProductBody(props: {
-  product: ProductDto; geo: { lat: number; lng: number } | null; setGeo: (g: { lat: number; lng: number } | null) => void;
+  product: ProductDto; geo: Geo | null;
   listings: PublicListingDto[] | null; asOf: string | null; loading: boolean; error: string | null; retry: () => void; cacheAge: string | null;
 }) {
   const { product } = props;
@@ -102,7 +102,7 @@ function ProductBody(props: {
       ) : props.loading ? (
         <LoadingState label="Comparing stores…" />
       ) : (
-        <Stores product={product} listings={props.listings!} geo={props.geo} setGeo={props.setGeo}
+        <Stores product={product} listings={props.listings!} geo={props.geo}
           stamp={<p className="text-xs text-ink-muted" aria-live="polite">Prices and stock as of {props.asOf ? formatAge(props.asOf, now) : "just now"} · {formatTimeShort(props.asOf)}</p>} />
       )}
       <Specs product={product} />
@@ -112,7 +112,7 @@ function ProductBody(props: {
 
 const formatTimeShort = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" }) : "");
 
-function CachedStores(p: { product: ProductDto; geo: { lat: number; lng: number } | null; setGeo: (g: null) => void; error: string | null; retry: () => void; cacheAge: string | null }) {
+function CachedStores(p: { product: ProductDto; error: string | null; retry: () => void; cacheAge: string | null }) {
   const { rows, loading } = useCacheList<PublicListingDto>("listing", { limit: 1000 });
   const mine = useMemo(() => rows.filter((l) => l.product_id === p.product.id), [rows, p.product.id]);
   if (loading) return <LoadingState />;
@@ -122,8 +122,8 @@ function CachedStores(p: { product: ProductDto; geo: { lat: number; lng: number 
         {p.error ? `${p.error} ` : "You're offline. "}Showing a saved copy{p.cacheAge ? ` from ${p.cacheAge}` : ""}. Prices and stock may be out of date; confirm online before ordering.
         {p.error && <button type="button" className="ml-2 font-semibold underline" onClick={p.retry}>Retry</button>}
       </Notice>
-      {mine.length === 0 ? <EmptyState title="No saved store prices">This product's store listings aren't in your saved catalogue yet.</EmptyState>
-        : <Stores product={p.product} listings={mine} geo={null} setGeo={() => undefined} stale staleAge={p.cacheAge} stamp={null} />}
+      {mine.length === 0 ? <EmptyState title="No saved store prices">No saved copy shows a store selling this product. Connect to check which registered stores sell it now.</EmptyState>
+        : <Stores product={p.product} listings={mine} geo={null} stale staleAge={p.cacheAge} stamp={null} />}
     </>
   );
 }
@@ -135,26 +135,15 @@ function variantsOf(product: ProductDto, listings: PublicListingDto[]): VariantD
   return [...byId.values()];
 }
 
-function Stores({ product, listings, geo, setGeo, stale, staleAge, stamp }: {
-  product: ProductDto; listings: PublicListingDto[]; geo: { lat: number; lng: number } | null; setGeo: (g: { lat: number; lng: number } | null) => void; stale?: boolean; staleAge?: string | null; stamp: React.ReactNode;
+function Stores({ product, listings, geo, stale, staleAge, stamp }: {
+  product: ProductDto; listings: PublicListingDto[]; geo: Geo | null; stale?: boolean; staleAge?: string | null; stamp: React.ReactNode;
 }) {
+  const loc = useShopperLocation();
   const variants = variantsOf(product, listings);
   const withListings = variants.filter((v) => listings.some((l) => l.variant_id === v.id));
   const [variantId, setVariantId] = useState<number | null>(null);
   const selected = variantId ?? withListings[0]?.id ?? null;
   const [area, setArea] = useState("");
-  const [locBusy, setLocBusy] = useState(false);
-  const [locMsg, setLocMsg] = useState<string | null>(null);
-
-  const useLocation_ = async () => {
-    setLocBusy(true); setLocMsg(null);
-    try {
-      const p = await getApproxLocation();
-      if (p) setGeo(p); else setLocMsg("We couldn't find your location. Type your city or area below instead.");
-    } catch (e) {
-      setLocMsg(e instanceof PermissionDeniedError ? `${e.message}` : humanizeError(e));
-    } finally { setLocBusy(false); }
-  };
 
   const shown = useMemo(() => {
     const a = area.trim().toLowerCase();
@@ -169,9 +158,35 @@ function Stores({ product, listings, geo, setGeo, stale, staleAge, stamp }: {
   }, [shown]);
 
   const sel = variants.find((v) => v.id === selected);
+  // closest registered store that has this exact version in stock (any version, if none of the selected one is in stock)
+  const nearest = useMemo(() => {
+    if (!geo || stale) return null;
+    const pick = (ls: PublicListingDto[]) => ls.filter((l) => l.availability.status !== "out_of_stock" && l.distance_km != null).sort((a, b) => a.distance_km! - b.distance_km!)[0] ?? null;
+    return pick(listings.filter((l) => l.variant_id === selected)) ?? pick(listings);
+  }, [geo, stale, listings, selected]);
+
+  if (listings.length === 0) {
+    return (
+      <section aria-label="Compare stores" className="space-y-3">
+        <h2 className="text-base font-bold text-ink">Compare stores</h2>
+        {stamp}
+        <EmptyState title="No store is selling this yet">No registered store on Hardwhere is selling this product right now. Check back later, or search for a similar product.</EmptyState>
+      </section>
+    );
+  }
+
   return (
     <section aria-label="Compare stores" className="space-y-3">
       <h2 className="text-base font-bold text-ink">Compare stores</h2>
+      <p className="text-sm text-ink-muted">{new Set(listings.map((l) => l.store?.id)).size} registered {new Set(listings.map((l) => l.store?.id)).size === 1 ? "store sells" : "stores sell"} this product.</p>
+      {nearest && (
+        <Card className="space-y-1 border-info bg-info-soft">
+          <p className="text-xs font-semibold tracking-wide text-info-ink uppercase">Nearest store with it in stock</p>
+          <p className="text-sm font-bold text-ink"><Link to={`/store/${nearest.store?.id}`} className="underline">{nearest.store?.business_name} · {nearest.store?.name}</Link></p>
+          <p className="text-sm text-ink">{formatKm(nearest.distance_km)} away · <Money cents={effectivePrice(nearest)} className="font-bold" />{nearest.variant_id !== selected ? ` · ${nearest.variant?.model_number ?? nearest.title ?? "other version"}` : ""}</p>
+        </Card>
+      )}
+      {geo && !stale && !nearest && <Notice tone="warn">No store near you has this in stock right now.</Notice>}
 
       {variants.length > 1 && (
         <div role="radiogroup" aria-label="Choose a version" className="space-y-2">
@@ -194,7 +209,7 @@ function Stores({ product, listings, geo, setGeo, stale, staleAge, stamp }: {
 
       <div className="flex flex-wrap items-end gap-2">
         {!stale && (
-          <Btn variant="secondary" busy={locBusy} onClick={() => void useLocation_()}>
+          <Btn variant="secondary" busy={loc.busy} onClick={() => void loc.locate()}>
             {geo ? "Location on · refresh" : "Use my location"}
           </Btn>
         )}
@@ -203,12 +218,12 @@ function Stores({ product, listings, geo, setGeo, stale, staleAge, stamp }: {
           <input id="area" value={area} onChange={(e) => setArea(e.target.value)} placeholder="Filter by city or area" className={inputCls} />
         </div>
       </div>
-      {locMsg && <Notice tone="warn">{locMsg}</Notice>}
+      {loc.error && <Notice tone="warn">{loc.error}</Notice>}
       {geo && !stale && <p className="text-xs text-ink-muted">Sorted by distance from your approximate location.</p>}
       {stamp}
 
       {shown.length === 0 ? (
-        <EmptyState title={area ? "No stores in that area" : "Not listed by any store right now"}>{area ? "Try a different city or clear the filter." : "Check back later or search for a similar product."}</EmptyState>
+        <EmptyState title={area ? "No stores in that area" : "No store sells this version"}>{area ? "No registered store in that area sells this. Try a different city or clear the filter." : "No registered store is selling this exact version right now. Try another version above."}</EmptyState>
       ) : shown.map((l) => <StoreCard key={l.id} l={l} cheapest={l.id === cheapest && shown.length > 1} stale={stale} staleAge={staleAge} />)}
     </section>
   );
@@ -237,7 +252,7 @@ function StoreCard({ l, cheapest, stale, staleAge }: { l: PublicListingDto; chea
     <Card className={cx("space-y-2", cheapest && "border-success ring-1 ring-success")}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-ink">{s?.business_name ?? "Store"}</p>
+          {s ? <Link to={`/store/${s.id}`} className="block truncate text-sm font-bold text-ink underline decoration-line underline-offset-2">{s.business_name ?? "Store"}</Link> : <p className="truncate text-sm font-bold text-ink">Store</p>}
           <p className="truncate text-sm text-ink">{s?.name}</p>
         </div>
         <div className="text-right">
