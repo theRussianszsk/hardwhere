@@ -114,3 +114,19 @@ it('lets POS sell items that are not yet published online', function () {
     $draft = World::stocked($this->w, $this->refs['TAPE5'], 5, 23500, publish: false);
     $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($draft, 1)]), $this->cashier + idem())->assertCreated();
 });
+
+it('looks up the outcome of a checkout by its key without re-sending it, scoped to the cashier', function () {
+    $owner = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $status = fn (string $key, array $who) => $this->getJson("/api/v1/vendor/pos/checkout/$key", $who);
+    $sale = $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($this->a, 2)]), $this->cashier + idem('lookup-1'))->assertCreated();
+
+    $status('test-key-lookup-1', $this->cashier)->assertOk()->assertJsonPath('data.id', $sale->json('data.id'))->assertJsonPath('data.total_cents', 70000)->assertJsonPath('data.items.0.quantity', 2);
+    $status('test-key-lookup-1', $this->cashier)->assertOk();
+    expect(($this->snap)($this->a)->on_hand)->toBe(8)->and(Sale::query()->forTenant($this->w['ctx'])->count())->toBe(1); // reading twice sold nothing more
+
+    $status('test-key-never-sent', $this->cashier)->assertNotFound()->assertJsonPath('error.code', 'not_found');
+    $status('test-key-lookup-1', $owner)->assertNotFound(); // keys are per cashier: the owner's identical key is a different attempt
+    $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($this->b, 99)]), $this->cashier + idem('lookup-refused'))->assertStatus(409);
+    $status('test-key-lookup-refused', $this->cashier)->assertNotFound(); // a refused checkout recorded nothing
+    $this->getJson('/api/v1/vendor/pos/checkout/bad', $this->cashier)->assertNotFound();
+});

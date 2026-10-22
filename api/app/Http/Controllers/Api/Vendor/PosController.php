@@ -78,6 +78,19 @@ class PosController extends Controller
         return (new SaleResource($sale))->additional(['replayed' => $replayed])->response()->setStatusCode($replayed ? 200 : 201);
     }
 
+    /**
+     * Read-only outcome of a checkout attempt, looked up by its Idempotency-Key: the sale this cashier created with it, or 404.
+     * Keys are scoped to tenant + cashier (as in PosService::checkout), so another cashier's identical key never matches. Never sells anything.
+     */
+    public function checkoutStatus(string $key): SaleResource
+    {
+        $ctx = $this->ctx();
+        $s = Sale::query()->forTenant($ctx)->with('items')->where('cashier_id', $ctx->userId)->where('idempotency_key', $key)->first() ?? throw ApiException::notFound('Sale');
+        $ctx->assertStore($s->store_id);
+
+        return new SaleResource($s);
+    }
+
     public function registers(Request $request)
     {
         $ctx = $this->ctx();

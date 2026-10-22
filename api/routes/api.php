@@ -93,6 +93,7 @@ Route::prefix('v1')->group(function () {
         Route::get('pos/search', [PosController::class, 'search'])->middleware('can:pos.sell');
         Route::post('pos/photo-search', [PosController::class, 'photoSearch'])->middleware(['can:pos.sell', 'throttle:photo']);
         Route::post('pos/checkout', [PosController::class, 'checkout'])->middleware('can:pos.sell');
+        Route::get('pos/checkout/{key}', [PosController::class, 'checkoutStatus'])->middleware('can:pos.sell')->where('key', '[A-Za-z0-9_.:-]{8,100}');
         Route::get('pos/registers', [PosController::class, 'registers'])->middleware('can:pos.session');
         Route::get('pos/sessions/current', [PosController::class, 'currentSession'])->middleware('can:pos.session');
         Route::post('pos/sessions', [PosController::class, 'openSession'])->middleware('can:pos.session');

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { COMMAND, formatPeso, humanizeError, newId, normalizePhMobile, useActive, type CheckoutInput, type PaymentMethod, type PosCheckoutPayload } from "@hardwhere/shared";
-import { useCart } from "../lib/cart";
+import { CHECKOUT_REFUSALS, useCart } from "../lib/cart";
 import { UnresolvedCheckout } from "../lib/CommandStatus";
 import { useOnline } from "../lib/hooks";
 import { Screen } from "../shell";
@@ -30,6 +30,7 @@ export function Checkout() {
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mismatch, setMismatch] = useState<string | null>(null);
 
   if (!ready) return <Screen title="Checkout" back="/pos"><LoadingState /></Screen>;
   if (cart.lines.length === 0) return <Screen title="Checkout" back="/pos"><EmptyState title="The cart is empty" action={<Link to="/pos"><Btn>Back to products</Btn></Link>} /></Screen>;
@@ -45,7 +46,7 @@ export function Checkout() {
 
   const pay = async () => {
     if (!active) return;
-    setError(null);
+    setError(null); setMismatch(null);
     if (!online) { setConfirm(false); setError("Checkout needs a connection — your cart is saved."); return; }
     setBusy(true);
     try {
@@ -57,10 +58,17 @@ export function Checkout() {
       };
       // ONE key per attempt: generated here, kept in the cart draft, reused by "Check again" so the server replays instead of selling twice.
       let key = cart.checkoutKey ?? newId();
-      const existing = await active.store.outbox.get(key);
-      if (existing?.state === "rejected") key = newId();
+      const existing = await active.store.outbox.get<PosCheckoutPayload>(key);
+      // Refused or rejected: nothing was sold. Drop that attempt (so it can't be re-sent later) and start over with a new key,
+      // since an old key with a new payload is refused by the server as idempotency_key_reused.
+      const soldNothing = existing?.state === "rejected" || (existing?.state === "needs_review" && CHECKOUT_REFUSALS.includes(existing.lastError?.code ?? ""));
+      if (existing && soldNothing) { await active.store.outbox.discard(key); key = newId(); }
+      else if (existing && existing.state !== "confirmed" && JSON.stringify(existing.payload?.input) !== JSON.stringify(input)) {
+        // The earlier charge may already be recorded with its own payment details: never swap them silently, and never sell twice.
+        setConfirm(false); setMismatch(key); return;
+      }
       cartApi.setKey(key);
-      if (!existing || existing.state === "rejected") {
+      if (!existing || soldNothing) {
         await active.store.outbox.enqueue<PosCheckoutPayload>(COMMAND.posCheckout, { input }, { id: key, label: `Sale ${formatPeso(totals.total)} (${totals.count} item${totals.count === 1 ? "" : "s"}, ${method})` });
       }
       void active.kickOutbox();
@@ -115,6 +123,13 @@ export function Checkout() {
       </details>
 
       {error && <Alert tone="error" live="assertive">{error}</Alert>}
+      {mismatch && (
+        <Alert tone="warn" live="assertive">
+          <p className="font-semibold">The last charge for this cart is not confirmed yet</p>
+          <p>It was sent with different payment details than the ones on this screen, and it may already be paid. Check it before charging again.</p>
+          <Link className="mt-1 inline-block font-semibold underline" to={`/pos/pay/${mismatch}`}>Check the last charge</Link>
+        </Alert>
+      )}
       <Btn block variant="success" className="min-h-14 text-base" disabled={!valid || !online || cartApi.locked} onClick={() => setConfirm(true)}>Charge {formatPeso(totals.total)}</Btn>
 
       <ConfirmDialog open={confirm} title="Complete this sale?" confirmLabel="Yes, charge it" busy={busy} onCancel={() => setConfirm(false)} onConfirm={() => void pay()}>

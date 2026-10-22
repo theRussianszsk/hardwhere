@@ -388,6 +388,13 @@
    "app": "vendor"
   },
   {
+   "name": "posCheckoutStatus",
+   "method": "GET",
+   "path": "vendor/pos/checkout/{key}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
    "name": "posRegisters",
    "method": "GET",
    "path": "vendor/pos/registers",

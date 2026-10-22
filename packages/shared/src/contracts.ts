@@ -111,6 +111,8 @@ export interface OutboxApi {
   submitDraft(id: string): Promise<void>;
   /** user-triggered retry: queued/needs_review/rejected -> queued, due now, attempts reset */
   retryNow(id: string): Promise<void>;
+  /** A read-only server lookup proved the command already took effect: queued/needs_review/rejected -> confirmed with that response (never a row mid-send). */
+  markConfirmed<R>(id: string, response: R): Promise<void>;
   discard(id: string): Promise<void>;
   countsByState(): Promise<Record<OutboxState, number>>;
   /** draft + queued + sending + needs_review + rejected: things the user has not seen succeed. */

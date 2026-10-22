@@ -150,6 +150,18 @@ describe("outbox API", () => {
     expect(await store.outbox.get("a")).toBeNull();
   });
 
+  it("markConfirmed records a looked-up result for unresolved rows only, never for a row mid-send", async () => {
+    const { port, store } = await setup();
+    for (const [id, state] of [["a", "needs_review"], ["b", "rejected"], ["c", "sending"], ["d", "draft"]] as const)
+      await port.run(`INSERT INTO outbox (id, scope_key, kind, payload, state, attempts, next_attempt_at, last_error, created_at, updated_at) VALUES (?, ?, 'k', '{}', ?, 1, NULL, '{"code":"x","message":"m"}', ?, ?)`, [id, scope.key, state, ts, ts]);
+    for (const id of ["a", "b", "c", "d"]) await store.outbox.markConfirmed(id, { data: { id: 7 } });
+    const items = Object.fromEntries((await store.outbox.list()).map((i) => [i.id, i]));
+    expect(items.a).toMatchObject({ state: "confirmed", response: { data: { id: 7 } }, lastError: null });
+    expect(items.b).toMatchObject({ state: "confirmed", response: { data: { id: 7 } } });
+    expect(items.c).toMatchObject({ state: "sending", response: null });
+    expect(items.d!.state).toBe("draft");
+  });
+
   it("corrupt payload/response JSON does not throw", async () => {
     const { port, store } = await setup();
     await port.run(`INSERT INTO outbox (id, scope_key, kind, payload, state, response, last_error, created_at, updated_at) VALUES ('z', ?, 'k', '{oops', 'queued', '[', 'nope', 't', 't')`, [scope.key]);
