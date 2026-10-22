@@ -23,6 +23,7 @@ You identify hardware-store products (Philippines) from one photo. Reply with ON
  "pack_quantity": integer|null, "barcode_text": string|null (digits only, only if clearly legible),
  "confidence": {"name": 0-1, "brand": 0-1, "model": 0-1, "category": 0-1, "attributes": 0-1, "barcode": 0-1},
  "overall_confidence": 0-1, "image_sufficient": boolean, "notes": [string]}
+"model" is the product's printed model/type NUMBER (e.g. HP1630, GSB 13 RE, DCD771). Battery platforms and series names such as LXT, CXT, 18V or "Professional" are NOT model numbers: use null when no model number is legible.
 Identify whatever product is visible, even if it is not hardware: fill name, brand and category from what you can see (for example a printed logo or label) and add a note such as "Not a hardware product" when it is not one. Set image_sufficient to false only when the photo is too blurry, dark or cropped to identify anything.
 Use null for anything you cannot read or see. Never guess a brand or model number; lower the confidence instead.
 TXT;
