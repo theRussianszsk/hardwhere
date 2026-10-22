@@ -129,3 +129,11 @@ it('does not deadlock when carts list the same items in opposite order', functio
         ledgerMatchesSnapshot($x['item']->id);
     }
 });
+
+it('opens one register session when 8 cashiers open it at once; the rest get a clean session_open', function () {
+    $job = ['kind' => 'session', 'tenant' => $this->w['tenant']->id, 'user' => $this->w['owner']->id, 'register' => $this->w['register']->id];
+    $results = collect(race(array_fill(0, 8, $job)));
+
+    expect($results->where('ok', true))->toHaveCount(1)->and($results->where('ok', false)->pluck('code')->unique()->values()->all())->toBe(['session_open']);
+    expect(DB::table('pos_sessions')->where('register_id', $this->w['register']->id)->whereNull('closed_at')->count())->toBe(1);
+});

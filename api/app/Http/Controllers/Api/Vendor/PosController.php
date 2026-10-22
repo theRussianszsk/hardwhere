@@ -108,13 +108,7 @@ class PosController extends Controller
 
     public function openSession(SessionRequest $request): JsonResponse
     {
-        $ctx = $this->ctx();
-        $register = PosRegister::query()->forTenant($ctx)->findOrFail($request->validated('register_id'));
-        $ctx->assertStore($register->store_id);
-        PosSession::query()->forTenant($ctx)->where('register_id', $register->id)->whereNull('closed_at')->exists()
-            && throw ApiException::conflict('session_open', 'This register already has an open session.');
-
-        $session = PosSession::create(['tenant_id' => $ctx->tenantId, 'register_id' => $register->id, 'opened_by' => $ctx->userId, 'opened_at' => now(), 'opening_float_cents' => $request->validated('opening_float_cents') ?? 0]);
+        $session = $this->pos->openSession($this->ctx(), (int) $request->validated('register_id'), (int) ($request->validated('opening_float_cents') ?? 0));
 
         return (new PosSessionResource($session))->response()->setStatusCode(201);
     }
