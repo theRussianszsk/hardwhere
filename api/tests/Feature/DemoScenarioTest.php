@@ -91,7 +91,7 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
     // 15. Inventory manager receives 2 more units; the cashier's checkout now succeeds and writes sale + items + ledger + snapshot
     $inv = World::login($this, 'inventory.a@hardwhere.test', 'vendor', 'dela-cruz-hardware');
     $locationId = collect($this->getJson('/api/v1/vendor/locations', $inv)->json('data'))->firstWhere('store_id', $storeId)['id'];
-    $this->postJson("/api/v1/vendor/inventory/$itemId/adjustments", ['location_id' => $locationId, 'movement_type' => 'purchase_receipt', 'quantity_delta' => 2, 'note' => 'Restock'], $inv + idem('scn-restock'))->assertCreated();
+    $this->postJson('/api/v1/vendor/purchase-receipts', ['location_id' => $locationId, 'notes' => 'Restock', 'items' => [['inventory_item_id' => $itemId, 'quantity' => 2, 'unit_cost_cents' => 360000]]], $inv + idem('scn-restock'))->assertCreated();
     $sale = $this->postJson('/api/v1/vendor/pos/checkout', $cart, $cashier + idem('scn-sale-2'))->assertCreated();
     expect($sale->json('data.total_cents'))->toBe(449900)->and($sale->json('data.change_cents'))->toBe(50100)->and($sale->json('data.items'))->toHaveCount(1)
         ->and($sale->json('data.receipt_no'))->toStartWith('DCH-QC-');

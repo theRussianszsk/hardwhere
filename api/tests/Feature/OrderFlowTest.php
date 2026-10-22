@@ -45,7 +45,9 @@ it('reserves stock atomically when an order is placed (on hand unchanged, availa
 
 it('never lets two customers reserve the last units', function () {
     ($this->place)($this->h, 8)->assertCreated();
-    ($this->place)($this->hb, 3)->assertStatus(409)->assertJsonPath('error.code', 'stock_unavailable')->assertJsonPath('error.details.available', 2);
+    // the customer learns which line is short and the public bucket, never the exact count (store hides it) or internal ids
+    ($this->place)($this->hb, 3)->assertStatus(409)->assertJsonPath('error.code', 'stock_unavailable')
+        ->assertExactJson(['error' => ['code' => 'stock_unavailable', 'message' => 'Not enough stock is available.', 'details' => ['listing_id' => $this->s['listing']->id, 'requested' => 3, 'availability' => 'low_stock']]]);
     ($this->place)($this->hb, 2)->assertCreated();
     ($this->place)($this->hb, 1)->assertStatus(409);
     $s = ($this->snap)();
@@ -157,7 +159,9 @@ it('validates the order against the listing rules', function () {
     ($this->place)($this->h, 5)->assertStatus(422)->assertJsonPath('error.code', 'quantity_out_of_range');
     ($this->place)($this->h, 4, ['items' => [['listing_id' => $this->s['listing']->id, 'quantity' => 4, 'expected_unit_price_cents' => 1]]])->assertStatus(409)->assertJsonPath('error.code', 'price_changed');
     ($this->place)($this->h, 4)->assertCreated(); // stock_buffer 3 leaves 7 available to the marketplace; 4 fits
-    ($this->place)($this->hb, 4)->assertStatus(409)->assertJsonPath('error.details.available', 3);
+    ($this->place)($this->hb, 4)->assertStatus(409)->assertJsonPath('error.details.availability', 'low_stock')->assertJsonMissingPath('error.details.available');
+    app(InventoryService::class)->updateListing($this->w['ctx'], $this->s['listing']->id, ['show_exact_stock' => true]); // the store opts in: exact count is fair game
+    ($this->place)($this->hb, 4)->assertStatus(409)->assertJsonPath('error.details.available', 3)->assertJsonMissingPath('error.details.inventory_item_id');
     ($this->place)($this->h, 2, ['contact_phone' => '12345'])->assertStatus(422)->assertJsonPath('error.code', 'invalid_phone');
     ($this->place)($this->h, 2, ['fulfillment_type' => 'delivery'])->assertStatus(422)->assertJsonPath('error.fields', fn ($f) => isset($f['delivery_address']));
     ($this->place)($this->h, 2, ['fulfillment_type' => 'delivery', 'delivery_address' => '1 Rizal St, QC'])->assertCreated();

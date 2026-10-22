@@ -327,6 +327,14 @@ function wireAdjust(root, it, done) {
   const send = async (move, delta, note) => {
     box.querySelectorAll('button').forEach((b) => (b.disabled = true));
     try {
+      // Received stock is a purchase receipt (receipt row, cost kept at the item's current cost); the adjustments API refuses it.
+      if (move === 'purchase_receipt') {
+        if (!can('purchase.receive') || it.cost_cents == null) throw { message: 'Your role cannot record received stock.' };
+        await post('/vendor/purchase-receipts', { location_id: +f('loc').value, notes: note || null, items: [{ inventory_item_id: it.id, quantity: delta, unit_cost_cents: it.cost_cents }] });
+        f('msg').innerHTML = `<div class="banner ok">${esc(MOVES[move].text)}: +${delta} at ${esc(locName(+f('loc').value))}.</div>`;
+        setTimeout(done, 700);
+        return;
+      }
       const r = await post(`/vendor/inventory/${it.id}/adjustments`, { location_id: +f('loc').value, movement_type: move, quantity_delta: delta, note: note || null });
       f('msg').innerHTML = `<div class="banner ok">${esc(MOVES[move].text)}: ${delta > 0 ? '+' : ''}${delta}. Now ${fmt(r.data.after_quantity)} at ${esc(locName(r.data.location_id))}.</div>`;
       setTimeout(done, 700);

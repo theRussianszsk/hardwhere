@@ -186,7 +186,15 @@ export interface PublicStoreDto {
 export type AvailabilityStatus = "in_stock" | "low_stock" | "out_of_stock";
 export interface Availability {
   status: AvailabilityStatus;
+  /** Exact count only when the store opted in to showing exact stock; otherwise null. */
   quantity: number | null;
+}
+/** `details` of a 409 `stock_unavailable` from POST /customer/orders. `available` is sent only when the store shows exact stock. */
+export interface OrderStockConflictDetails {
+  listing_id: number;
+  requested: number;
+  availability: AvailabilityStatus;
+  available?: number;
 }
 export interface PublicListingDto {
   id: number;

@@ -134,7 +134,7 @@ export function createApiClient(opts: ApiClientOptions) {
     suppliers: () => call<{ data: T.SupplierDto[] }>("suppliers"),
     supplierCreate: (input: Partial<T.SupplierDto>) => call<T.Wrapped<T.SupplierDto>>("supplierCreate", { body: input }),
     inventoryList: (query: { q?: string; low_stock?: boolean; sort?: string; page?: number; per_page?: number }) => call<T.Paginated<T.InventoryItemDto>>("inventoryList", q(query)),
-    inventoryCreate: (input: Record<string, unknown>) => call<T.Wrapped<T.InventoryItemDto>>("inventoryCreate", { body: input }),
+    inventoryCreate: (input: Record<string, unknown>, idempotencyKey: string) => call<T.Wrapped<T.InventoryItemDto>>("inventoryCreate", { body: input, idempotencyKey }),
     inventoryGet: (item: number) => call<T.Wrapped<T.InventoryItemDto>>("inventoryGet", { params: { item } }),
     inventoryLedger: (item: number, page = 1) => call<T.Paginated<T.LedgerEntryDto>>("inventoryLedger", { params: { item }, ...q({ page }) }),
     stockAdjust: (item: number, input: { location_id: number; movement_type: string; quantity_delta: number; note?: string }, idempotencyKey: string) =>

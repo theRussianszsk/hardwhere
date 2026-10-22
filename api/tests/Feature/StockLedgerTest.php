@@ -84,10 +84,40 @@ it('exposes an adjustment API with reasons, idempotency and a readable ledger', 
     $this->postJson($url, ['quantity_delta' => -50] + $body, $h + idem('k3'))->assertStatus(409)->assertJsonPath('error.code', 'stock_unavailable');
 });
 
+it('refuses movement types on the adjustment API that have their own audited flow', function (string $type) {
+    $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $this->postJson('/api/v1/vendor/inventory/'.$this->s['item']->id.'/adjustments', ['location_id' => $this->w['location']->id, 'movement_type' => $type, 'quantity_delta' => 5, 'note' => 'Restock'], $h + idem())
+        ->assertStatus(422)->assertJsonPath('error.fields.movement_type.0', fn ($m) => is_string($m));
+    expect(StockLedgerEntry::query()->forTenant($this->w['ctx'])->count())->toBe(1)->and(StockSnapshot::query()->forTenant($this->w['ctx'])->sole()->on_hand)->toBe(10);
+})->with(['opening_balance', 'purchase_receipt', 'transfer_in', 'transfer_out']);
+
+it('requires a reason for every adjustment that is not a customer return', function (string $type, int $delta) {
+    $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $url = '/api/v1/vendor/inventory/'.$this->s['item']->id.'/adjustments';
+    $body = ['location_id' => $this->w['location']->id, 'movement_type' => $type, 'quantity_delta' => $delta];
+    $this->postJson($url, $body, $h + idem())->assertStatus(422)->assertJsonPath('error.fields.note.0', fn ($m) => is_string($m));
+    $this->postJson($url, $body + ['note' => 'Counted shelf'], $h + idem())->assertCreated();
+    $this->postJson($url, ['location_id' => $this->w['location']->id, 'movement_type' => 'return', 'quantity_delta' => 1], $h + idem())->assertCreated();
+})->with([['damage', -1], ['loss', -1], ['correction', 2], ['manual_adjustment', -2]]);
+
 it('receives purchases into stock and updates the item cost', function () {
     $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
     $this->postJson('/api/v1/vendor/purchase-receipts', ['location_id' => $this->w['location']->id, 'reference' => 'PO-1', 'items' => [['inventory_item_id' => $this->s['item']->id, 'quantity' => 5, 'unit_cost_cents' => 21000]]], $h + idem('po1'))
         ->assertCreated()->assertJsonPath('data.total_cost_cents', 105000);
     expect(StockSnapshot::query()->forTenant($this->w['ctx'])->sole()->on_hand)->toBe(15)
         ->and($this->s['item']->fresh()->cost_cents)->toBe(21000);
+});
+
+it('replays a retried manual add-to-stock instead of reporting the stock it added as already stocked', function () {
+    $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $body = ['variant_id' => $this->refs['NAIL3'], 'tenant_sku' => 'NAIL-3', 'cost_cents' => 5000, 'price_cents' => 8500, 'quantity' => 6, 'reorder_threshold' => 1, 'store_id' => $this->w['store']->id];
+    $this->postJson('/api/v1/vendor/inventory', $body, $h)->assertStatus(422)->assertJsonPath('error.code', 'idempotency_key_required');
+
+    $first = $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-1'))->assertCreated()->assertJsonPath('replayed', false);
+    $again = $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-1'))->assertOk()->assertJsonPath('replayed', true)->assertJsonPath('data.on_hand', 6);
+    expect($again->json('data.id'))->toBe($first->json('data.id'))->and($again->json('data.sku'))->toBe('NAIL-3');
+    expect(StockLedgerEntry::query()->forTenant($this->w['ctx'])->where('inventory_item_id', $first->json('data.id'))->count())->toBe(1);
+
+    $this->postJson('/api/v1/vendor/inventory', ['quantity' => 7] + $body, $h + idem('add-1'))->assertStatus(409)->assertJsonPath('error.code', 'idempotency_key_reused');
+    $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-2'))->assertStatus(409)->assertJsonPath('error.code', 'already_stocked'); // a genuinely new request still is
 });
