@@ -20,7 +20,7 @@ Two mobile apps and one API for hardware stores:
 ## Slides
 https://drive.google.com/file/d/1U-Ku0Sc_hNlbmDZKJe7fjSY68P0wWSTY/view?usp=sharing
 
-Same deck in this repository: [inventOS_pitch_slides_4x3.pdf](inventOS_pitch_slides_4x3.pdf)
+Same deck in this repository: [HardWhere_pitch_slides_4x3.pdf](HardWhere_pitch_slides_4x3.pdf)
 
 ## Business plan
 **Problem:** Philippine neighbourhood hardware stores sell thousands of spec-sensitive items, and most have no barcode: loose nails, PVC fittings, bolts, cut lumber, repacked sand. Stock lives in notebooks or the owner's memory, so owners do not know what is low or not selling. Buyers who need an exact part today (a 20A breaker, an M10 bolt) call or drive from store to store, because online marketplaces deliver in days.
