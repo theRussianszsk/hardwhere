@@ -36,4 +36,14 @@ return [
     'marketplace' => [
         'low_stock_threshold' => 5,
     ],
+
+    'demand' => [
+        // An alert fires when this many distinct searchers look for the same thing inside the window; the same subject is not re-alerted during the cooldown.
+        'min_searchers' => (int) env('DEMAND_MIN_SEARCHERS', 5),
+        'window_hours' => (int) env('DEMAND_WINDOW_HOURS', 24),
+        'cooldown_hours' => (int) env('DEMAND_COOLDOWN_HOURS', 72),
+        // A photo search counts toward a specific product only when its best catalog candidate scores at least this.
+        'photo_match_min_score' => 0.75,
+        'vendor_signup_url' => env('VENDOR_SIGNUP_URL', env('APP_URL', 'http://localhost').'/vendors/join'),
+    ],
 ];

@@ -9,3 +9,5 @@ Schedule::call(function () {
         ->where('expires_at', '<', now())
         ->delete();
 })->daily()->description('Delete expired team invitations');
+
+Schedule::command('demand:detect')->everyFiveMinutes()->withoutOverlapping()->description('Email vendors about high search demand');

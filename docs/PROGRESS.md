@@ -14,6 +14,8 @@
 - AI: `VisionProvider` interface; `MockVisionProvider` (default, labelled) and `GemmaVisionProvider` (Gemini API generateContent; models documented by Google: gemma-4-26b-a4b-it, gemma-4-31b-it). Gemma path is NOT live-verified (no key).
 - Contract: PHP feature tests write real JSON to `packages/shared/contract/fixtures`; TS type-checks them with `satisfies`. `endpoints.json` is checked against the router.
 - Photo search for customers requires a signed-in customer (AI cost control); text search is anonymous.
+- Demand alerts: every customer text/photo search leaves a `demand_signals` row (salted searcher hash, never raw IP/user). `demand:detect` (scheduled every 5 min) alerts when >= `DEMAND_MIN_SEARCHERS` distinct shoppers searched the same subject inside `DEMAND_WINDOW_HOURS`, then emails member owners/inventory managers (prepare stock) and matching, subscribed `prospect_vendors` (non-members: invite to join). Cooldown `DEMAND_COOLDOWN_HOURS` per subject. Emails carry counts only.
+- Local mail: Mailpit in docker compose (UI http://localhost:8025, SMTP 1025). `migrate:fresh --seed` runs `DemandDemoSeeder`, which fills the inbox for member and non-member vendors. `php artisan demand:simulate "<query>" --searchers=6 --detect` triggers more. `artisan serve` re-reads `.env` in its workers, so HTTP-triggered mail uses `.env` MAIL_* (compose env only reaches CLI/scheduler).
 
 ## Status
 - [x] Migrations, models, services, controllers, routes (72), seeders (verified: ledger == snapshots)
