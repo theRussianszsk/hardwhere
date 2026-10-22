@@ -67,6 +67,9 @@ export function PaymentStatus() {
 
   const line = cartApi.cart.lines.find((l) => l.inventoryItemId === details.inventory_item_id || l.listingId === details.listing_id);
   const available = typeof details.available === "number" ? details.available : null;
+  // The 409 carries the server's live price: apply it directly, since the synced cache may still lag behind the change.
+  const current = typeof details.current === "number" ? details.current : null;
+  const usePrice = line && current !== null ? () => cartApi.patch(line.listingId, { unitPriceCents: current }) : undefined;
 
   return (
     <Screen title="Checkout" back="/pos">
@@ -109,7 +112,7 @@ export function PaymentStatus() {
           <Alert tone="error" live="assertive">
             <p className="font-semibold">A price changed — nothing was sold</p>
             <p>{line ? `${line.name} is now ${formatPeso(Number(details.current))} (was ${formatPeso(Number(details.expected))}).` : "One of the prices changed."} Your cart is kept; the new prices will be applied.</p>
-            <Btn className="mt-2" busy={busy} onClick={() => void refreshCart()}>Update prices &amp; review cart</Btn>
+            <Btn className="mt-2" busy={busy} onClick={() => void refreshCart(usePrice)}>Update prices &amp; review cart</Btn>
           </Alert>
         )}
 
