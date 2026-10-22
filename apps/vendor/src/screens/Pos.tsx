@@ -5,6 +5,7 @@ import {
   type PosPhotoSearchResult, type TenantListingDto,
 } from "@hardwhere/shared";
 import { listingName, listingPrice, type CartLine, useCart } from "../lib/cart";
+import { UnresolvedCheckout } from "../lib/CommandStatus";
 import { useInventoryMap, useOnline, useStores } from "../lib/hooks";
 import { photoErrorText, PhotoPicker } from "../lib/PhotoPicker";
 import { Screen } from "../shell";
@@ -43,6 +44,7 @@ export function Pos() {
   const firstLaunch = !!sync && !sync.snapshotComplete && everything.rows.length === 0;
 
   const addListing = (l: TenantListingDto) => {
+    if (cartApi.locked) { setNotice({ tone: "warn", text: "The cart is locked until the previous charge is resolved." }); return; }
     cartApi.add(l);
     setNotice({ tone: "info", text: `Added ${listingName(l)}.` });
   };
@@ -77,10 +79,12 @@ export function Pos() {
   return (
     <Screen title="Point of sale" right={store ? <span className="hidden text-xs text-slate-600 min-[380px]:inline">{store.name}</span> : undefined}>
       {profile?.storeId == null && stores.length > 1 && (
-        <SelectField label="Selling at" value={storeId ?? ""} disabled={cart.lines.length > 0} hint={cart.lines.length ? "Clear the cart to switch stores." : undefined} onChange={(e) => cartApi.setStore(Number(e.target.value))}>
+        <SelectField label="Selling at" value={storeId ?? ""} disabled={cart.lines.length > 0 || cartApi.locked} hint={cart.lines.length ? "Clear the cart to switch stores." : undefined} onChange={(e) => cartApi.setStore(Number(e.target.value))}>
           {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </SelectField>
       )}
+
+      {cartApi.locked && cart.checkoutKey && <UnresolvedCheckout id={cart.checkoutKey} />}
 
       <Segmented label="Sale view" value={tab} onChange={(t) => { setNotice(null); setTab(t); }} options={[{ value: "products", label: "Products" }, { value: "cart", label: `Cart (${totals.count})` }]} />
       {tab === "products" ? (
@@ -88,8 +92,8 @@ export function Pos() {
           <form onSubmit={(e) => void onSubmit(e)} className="space-y-2" role="search">
             <TextField label="Find a product" type="search" enterKeyHint="search" placeholder="Name, brand, SKU or barcode" value={search} onChange={(e) => setSearch(e.target.value)} hint="Press Enter on an exact SKU or barcode to add it straight away." />
             <div className="grid grid-cols-2 gap-2">
-              <Btn type="button" variant="secondary" disabled={!scanOk} onClick={() => void onScan()}><Icon name="scan" />{scanOk ? "Scan barcode" : "Scan (phone only)"}</Btn>
-              <Btn type="button" variant="secondary" onClick={() => setPhotoOpen(true)}><Icon name="camera" />Photo search</Btn>
+              <Btn type="button" variant="secondary" disabled={!scanOk || cartApi.locked} onClick={() => void onScan()}><Icon name="scan" />{scanOk ? "Scan barcode" : "Scan (phone only)"}</Btn>
+              <Btn type="button" variant="secondary" disabled={cartApi.locked} onClick={() => setPhotoOpen(true)}><Icon name="camera" />Photo search</Btn>
             </div>
           </form>
 
@@ -125,7 +129,7 @@ export function Pos() {
                           </div>
                           <StockBadge available={l.available_quantity} low={it?.low_stock} cached />
                         </div>
-                        <Btn className="shrink-0" aria-label={`Add ${listingName(l)} to cart`} onClick={() => addListing(l)}>{inCart ? `+1 (${inCart})` : "Add"}</Btn>
+                        <Btn className="shrink-0" aria-label={`Add ${listingName(l)} to cart`} disabled={cartApi.locked} onClick={() => addListing(l)}>{inCart ? `+1 (${inCart})` : "Add"}</Btn>
                       </Card>
                     </li>
                   );
@@ -156,7 +160,8 @@ function CartView({ cartApi, canDiscount, onClear, onCheckout }: { cartApi: Retu
   const { cart, totals, vatBps } = cartApi;
   if (cart.lines.length === 0) return <EmptyState title="The cart is empty">Search or scan a product, then tap Add.</EmptyState>;
   return (
-    <div className="space-y-3">
+    // A disabled fieldset turns off every stepper, discount, remove and checkout control while the last charge is unresolved.
+    <fieldset disabled={cartApi.locked} className="m-0 min-w-0 space-y-3 border-0 p-0">
       <ul className="space-y-2" aria-label="Cart lines">
         {cart.lines.map((l) => <li key={l.listingId}><CartRow line={l} cartApi={cartApi} canDiscount={canDiscount} /></li>)}
       </ul>
@@ -169,7 +174,7 @@ function CartView({ cartApi, canDiscount, onClear, onCheckout }: { cartApi: Retu
       <p className="text-xs text-slate-600">The cart is saved on this phone. Adding items here does not take them out of stock — only a confirmed checkout does.</p>
       <Btn block variant="success" className="min-h-14 text-base" onClick={onCheckout}>Checkout · {formatPeso(totals.total)}</Btn>
       <Btn block variant="ghost" onClick={onClear}><Icon name="trash" className="h-4 w-4" />Clear cart</Btn>
-    </div>
+    </fieldset>
   );
 }
 

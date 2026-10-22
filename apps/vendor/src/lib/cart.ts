@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { useAuth, type TenantListingDto } from "@hardwhere/shared";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useActive, useAuth, type OutboxItem, type TenantListingDto } from "@hardwhere/shared";
 import { useDraft, useOutboxItem } from "./hooks";
 
 export interface CartLine {
@@ -15,13 +15,19 @@ export interface CartLine {
 export interface Cart {
   storeId: number | null;
   lines: CartLine[];
-  /** Idempotency key of the checkout attempt in progress. Generated once, reused for "check again", dropped when the cart changes after a refusal. */
+  /** Idempotency key of the checkout attempt in progress. Generated once, reused for "check again", dropped only once the attempt is known not to have sold anything. */
   checkoutKey: string | null;
 }
 export const EMPTY_CART: Cart = { storeId: null, lines: [], checkoutKey: null };
 
 export const listingName = (l: TenantListingDto) => l.title_override ?? l.title ?? l.product?.name ?? l.sku;
 export const listingPrice = (l: TenantListingDto) => l.sale_price_cents ?? l.price_cents;
+
+/** 409s that prove the server sold nothing: the cashier fixes the cart and tries again with a new key. */
+export const CHECKOUT_REFUSALS = ["stock_unavailable", "price_changed"];
+/** The sale may have reached (or may still reach) the server: neither confirmed nor known to have sold nothing. */
+export const checkoutUnresolved = (it: OutboxItem | null | undefined) =>
+  !!it && (it.state === "queued" || it.state === "sending" || (it.state === "needs_review" && !CHECKOUT_REFUSALS.includes(it.lastError?.code ?? "")));
 
 export function cartTotals(lines: CartLine[], vatRateBps: number) {
   const gross = lines.reduce((s, l) => s + l.unitPriceCents * l.qty, 0);
@@ -36,9 +42,15 @@ export function cartTotals(lines: CartLine[], vatRateBps: number) {
 export function useCart() {
   const { value: cart, set, ready, clear } = useDraft<Cart>("pos-cart", "current", EMPTY_CART, 60);
   const { profile } = useAuth();
+  const active = useActive();
   const vatBps = profile?.tenant?.vat_rate_bps ?? 1200;
+  const { item: attempt, loading: attemptLoading } = useOutboxItem(cart.checkoutKey);
+  // While the last charge may have been recorded, the cart is frozen: an edit would mint a new key and could sell the same goods twice.
+  const locked = !!cart.checkoutKey && (attemptLoading || (attempt?.id === cart.checkoutKey && checkoutUnresolved(attempt)));
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
   // Any edit invalidates a previous checkout key: a different cart must never reuse an old idempotency key.
-  const edit = useCallback((fn: (c: Cart) => Cart) => set((c) => ({ ...fn(c), checkoutKey: null })), [set]);
+  const edit = useCallback((fn: (c: Cart) => Cart) => { if (!lockedRef.current) set((c) => ({ ...fn(c), checkoutKey: null })); }, [set]);
 
   const add = useCallback((l: TenantListingDto) => edit((c) => {
     const i = c.lines.findIndex((x) => x.listingId === l.id);
@@ -49,11 +61,17 @@ export function useCart() {
   const remove = useCallback((listingId: number) => edit((c) => ({ ...c, lines: c.lines.filter((x) => x.listingId !== listingId) })), [edit]);
   const setStore = useCallback((storeId: number) => edit((c) => ({ ...c, storeId })), [edit]);
   const setKey = useCallback((checkoutKey: string | null) => set((c) => ({ ...c, checkoutKey })), [set]);
+  /** The cashier's explicit "nothing was sold": drop the unresolved attempt so it can never be re-sent, then unlock the cart. */
+  const release = useCallback(async (id: string) => {
+    await active?.store.outbox.discard(id);
+    if (await active?.store.outbox.get(id)) throw new Error("This charge is being sent right now. Wait for the server's answer.");
+    lockedRef.current = false;
+    set((c) => (c.checkoutKey === id ? { ...c, checkoutKey: null } : c));
+  }, [active, set]);
   const totals = useMemo(() => cartTotals(cart.lines, vatBps), [cart.lines, vatBps]);
 
   // If the sale for this cart was confirmed (even while the user was on another screen), the cart is spent: clear it so it can't be rung up twice.
-  const { item: attempt } = useOutboxItem(cart.checkoutKey);
   useEffect(() => { if (attempt?.state === "confirmed" && cart.checkoutKey === attempt.id) void clear(); }, [attempt?.state, attempt?.id, cart.checkoutKey, clear]);
 
-  return { cart, ready, add, patch, remove, setStore, setKey, clear, totals, vatBps };
+  return { cart, ready, locked, add, patch, remove, setStore, setKey, release, clear, totals, vatBps };
 }
