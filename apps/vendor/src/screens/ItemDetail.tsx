@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  ApiError, COMMAND, formatManilaDateTime, humanizeError, newId, useActive, useAuth, useCacheItem, useNow, useOnlineQuery, useServices,
+  ApiError, COMMAND, formatManilaDateTime, humanizeError, newId, useActive, useAuth, useCacheItem, useNow, useOnlineQuery, useServices, useSyncStatus,
   type InventoryItemDto, type LocationDto, type PurchaseReceivePayload, type StockAdjustPayload, type TenantListingDto,
 } from "@hardwhere/shared";
 import { CommandStatus } from "../lib/CommandStatus";
@@ -29,6 +29,7 @@ export function ItemDetail() {
   const now = useNow(30_000);
   const live = useOnlineQuery((api) => api.inventoryGet(id), [id]);
   const cachedItem = useCacheItem<InventoryItemDto>("inventory_item", id);
+  const sync = useSyncStatus();
   const ledger = useOnlineQuery((api) => api.inventoryLedger(id), [id], { enabled: can("inventory.adjust") });
   const locs = useOnlineQuery((api) => api.locations(), []);
   const [adjustOpen, setAdjustOpen] = useState(false);
@@ -52,7 +53,7 @@ export function ItemDetail() {
   return (
     <Screen title={item.name ?? item.product_name ?? item.sku} back="/stock">
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700" aria-live="polite">
-        {isLive ? <Pill tone="green">Live · as of {live.fetchedAt ? formatManilaDateTime(new Date(live.fetchedAt)) : ""}</Pill> : <CachedTag at={cachedItem.item?.updated_at} now={now} />}
+        {isLive ? <Pill tone="green">Live · as of {live.fetchedAt ? formatManilaDateTime(new Date(live.fetchedAt)) : ""}</Pill> : <CachedTag at={sync?.lastSyncedAt} now={now} />}
         {live.loading && <span>Refreshing…</span>}
       </div>
       {!isLive && !!live.error && <Alert tone="warn">Couldn't get live numbers ({live.message}). These are saved values and may be out of date. <button type="button" className="font-semibold underline" onClick={() => void live.refetch()}>Try again</button></Alert>}
