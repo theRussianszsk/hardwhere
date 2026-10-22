@@ -128,6 +128,7 @@ class OrderService
         return $order->load('items', 'reservation');
     }
 
+<<<<<<< HEAD
     /**
      * StockService::allocate, with a customer-safe 409: the listing instead of the internal item id, and the exact
      * available count only when the store shows exact stock (otherwise just the public availability bucket).
@@ -151,13 +152,12 @@ class OrderService
     }
 
     /** Listings a customer may buy: published, public, live store, active tenant. @param list<int> $ids */
+=======
+    /** Listings a customer may buy: exactly what the marketplace shows (published, public, approved product, live store, active tenant). @param list<int> $ids */
+>>>>>>> master
     public function purchasable(array $ids)
     {
-        return TenantListing::query()->withoutGlobalScopes()
-            ->whereIn('tenant_listings.id', $ids)->whereNull('tenant_listings.deleted_at')
-            ->where('publication_status', 'published')->where('visibility', 'public')
-            ->whereHas('store', fn ($q) => $q->withoutGlobalScopes()->where('is_active', true)->whereNull('deleted_at')
-                ->whereIn('tenant_id', fn ($t) => $t->select('id')->from('tenants')->where('status', 'active')->whereNull('deleted_at')));
+        return MarketplaceSearch::liveListings()->whereIn('tenant_listings.id', $ids);
     }
 
     public function vendorTransition(int $orderId, OrderStatus $to, ?string $reason, int $actorId): Order

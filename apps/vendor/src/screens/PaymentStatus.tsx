@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { formatManilaDateTime, formatPeso, humanizeError, useActive, useAuth, useCacheList, type PosCheckoutPayload, type SaleDto, type StoreDto } from "@hardwhere/shared";
+import { ApiError, formatManilaDateTime, formatPeso, humanizeError, useActive, useAuth, useCacheList, useServices, type PosCheckoutPayload, type SaleDto, type StoreDto } from "@hardwhere/shared";
 import { CHECKOUT_REFUSALS, useCart } from "../lib/cart";
 import { lastErrorText } from "../lib/CommandStatus";
 import { useOnline, useOutboxItem } from "../lib/hooks";
@@ -11,12 +11,15 @@ export function PaymentStatus() {
   const id = useParams().id!;
   const { item, loading } = useOutboxItem<SaleDto, PosCheckoutPayload>(id);
   const active = useActive();
+  const { api } = useServices();
   const { online } = useOnline();
   const cartApi = useCart();
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [releaseAsk, setReleaseAsk] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [resendAsk, setResendAsk] = useState(false);
 
   if (loading) return <Screen title="Checkout"><LoadingState /></Screen>;
   if (!item) return <Screen title="Checkout" back="/pos"><EmptyState title="This checkout isn't on this phone" action={<Link to="/pos"><Btn>Back to POS</Btn></Link>}>It may have been discarded. Check Sales on the server before ringing it up again.</EmptyState></Screen>;
@@ -24,12 +27,21 @@ export function PaymentStatus() {
   if (item.state === "confirmed" && item.response) return <Receipt sale={item.response} onNewSale={() => { void cartApi.clear(); nav("/pos"); }} />;
 
   const retry = async () => {
-    setBusy(true); setMsg(null);
+    setBusy(true); setMsg(null); setResendAsk(false); setNotFound(false);
     try { await active?.store.outbox.retryNow(id); await active?.kickOutbox(); } catch (e) { setMsg(humanizeError(e)); } finally { setBusy(false); }
+  };
+  // Read-only: asks the server whether a sale was recorded under this key. Found -> it IS this checkout's result; nothing is re-sent.
+  const check = async () => {
+    setBusy(true); setMsg(null); setNotFound(false);
+    try { await active?.store.outbox.markConfirmed(id, (await api.posCheckoutStatus(id)).data); }
+    catch (e) { if (e instanceof ApiError && e.kind === "not_found") setNotFound(true); else setMsg(humanizeError(e)); }
+    finally { setBusy(false); }
   };
   const err = item.lastError;
   const details = (err?.details ?? {}) as Record<string, unknown>;
   const refused = CHECKOUT_REFUSALS.includes(err?.code ?? "");
+  // The server already holds a sale under this key, made from a different payload: only a lookup can resolve it (a re-send gets the same 409).
+  const reused = err?.code === "idempotency_key_reused";
 
   // Server said no (409 stock/price): nothing was sold. Refresh the cache, keep the cart, send the cashier back to fix it.
   const refreshCart = async (fix?: () => void) => {
@@ -55,6 +67,9 @@ export function PaymentStatus() {
 
   const line = cartApi.cart.lines.find((l) => l.inventoryItemId === details.inventory_item_id || l.listingId === details.listing_id);
   const available = typeof details.available === "number" ? details.available : null;
+  // The 409 carries the server's live price: apply it directly, since the synced cache may still lag behind the change.
+  const current = typeof details.current === "number" ? details.current : null;
+  const usePrice = line && current !== null ? () => cartApi.patch(line.listingId, { unitPriceCents: current }) : undefined;
 
   return (
     <Screen title="Checkout" back="/pos">
@@ -68,9 +83,15 @@ export function PaymentStatus() {
         {item.state === "needs_review" && !refused && (
           <Alert tone="warn" live="assertive">
             <p className="font-semibold">Not confirmed yet</p>
-            <p>We couldn't get an answer from the server, so we don't know whether this sale went through. {lastErrorText(err)}</p>
-            <p className="mt-1">Press “Check again”. It re-sends with the same sale number key, so the server will not charge or take stock twice.</p>
-            <Btn className="mt-2" busy={busy} disabled={!online} onClick={() => void retry()}>Check again</Btn>
+            {reused
+              ? <p>The server already has a sale with this sale number, recorded with different details than this phone last sent. Check its status to see what was charged.</p>
+              : <p>We couldn't get an answer from the server, so we don't know whether this sale went through. {lastErrorText(err)}</p>}
+            <p className="mt-1">“Check status” only asks the server whether this sale was recorded. It never charges anything.</p>
+            <div className="mt-2 flex flex-col gap-2">
+              <Btn busy={busy} disabled={!online} onClick={() => void check()}>Check status</Btn>
+              {notFound && <p role="status">The server has no sale with this number, so nothing has been charged for it so far.</p>}
+              {!reused && <Btn variant="secondary" disabled={busy || !online} onClick={() => setResendAsk(true)}>Send again</Btn>}
+            </div>
             {!online && <p className="mt-1 text-xs">Waiting for a connection.</p>}
             <p className="mt-2">The cart stays locked until this is resolved, so the same goods can't be charged twice.</p>
             <Btn variant="ghost" className="mt-1" disabled={busy} onClick={() => setReleaseAsk(true)}>I confirm nothing was sold</Btn>
@@ -91,7 +112,7 @@ export function PaymentStatus() {
           <Alert tone="error" live="assertive">
             <p className="font-semibold">A price changed — nothing was sold</p>
             <p>{line ? `${line.name} is now ${formatPeso(Number(details.current))} (was ${formatPeso(Number(details.expected))}).` : "One of the prices changed."} Your cart is kept; the new prices will be applied.</p>
-            <Btn className="mt-2" busy={busy} onClick={() => void refreshCart()}>Update prices &amp; review cart</Btn>
+            <Btn className="mt-2" busy={busy} onClick={() => void refreshCart(usePrice)}>Update prices &amp; review cart</Btn>
           </Alert>
         )}
 
@@ -109,8 +130,11 @@ export function PaymentStatus() {
         <Card className="text-sm text-slate-700">{item.label}</Card>
       </div>
       <ConfirmDialog open={releaseAsk} title="Nothing was sold?" danger confirmLabel="Yes, nothing was sold" busy={busy} onCancel={() => setReleaseAsk(false)} onConfirm={() => void release()}>
-        <p>Only continue if you are sure this sale is <strong>not</strong> on the server (for example, you checked Sales or the customer did not pay).</p>
+        <p>Only continue if you are sure this sale is <strong>not</strong> on the server (for example, “Check status” found no sale, or the customer did not pay).</p>
         <p className="mt-1">This attempt is removed from the phone and will never be sent again; the cart unlocks for a new sale. If the server did record it, charging the cart again sells it twice.</p>
+      </ConfirmDialog>
+      <ConfirmDialog open={resendAsk} title="Send this sale again?" confirmLabel="Send again" busy={busy} onCancel={() => setResendAsk(false)} onConfirm={() => void retry()}>
+        <p>The same sale is sent again with the same sale number, exactly as first entered. If the server already recorded it, it answers with that sale instead of charging twice.</p>
       </ConfirmDialog>
     </Screen>
   );

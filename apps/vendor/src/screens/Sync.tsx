@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, ModalBody, ModalHeader } from "flowbite-react";
-import { formatAge, formatManilaDateTime, humanizeError, UnsentWorkError, useActive, useAuth, useConnectivity, useNow, useOutbox, useServices, useSyncStatus, type OutboxItem, type PhotoMeta } from "@hardwhere/shared";
+import { Link } from "react-router-dom";
+import { COMMAND, formatAge, formatManilaDateTime, humanizeError, UnsentWorkError, useActive, useAuth, useConnectivity, useNow, useOutbox, useServices, useSyncStatus, type OutboxItem, type PhotoMeta } from "@hardwhere/shared";
 import { lastErrorText } from "../lib/CommandStatus";
 import { useOnline } from "../lib/hooks";
 import { Screen } from "../shell";
@@ -83,7 +84,10 @@ export function SyncScreen() {
             <p className="text-xs text-slate-600">{it.kind} · tries {it.attempts} · created {formatAge(it.createdAt, now)}{it.nextAttemptAt && it.state === "queued" ? ` · next try ${formatAge(it.nextAttemptAt, now).replace("ago", "").trim() === "just now" ? "now" : "soon"}` : ""}</p>
             {it.lastError && <p className="text-sm text-red-800">{lastErrorText(it.lastError)} <span className="text-xs text-slate-600">({it.lastError.code})</span></p>}
             <div className="flex gap-2 pt-1">
-              {it.state !== "sending" && <Btn variant="secondary" className="flex-1" disabled={!online} busy={busy === `retry-${it.id}`} onClick={() => void retry(it)}>{it.state === "needs_review" ? "Check again" : "Retry"}</Btn>}
+              {/* A sale is never re-sent from here: its payment screen has a read-only status check and a separate, confirmed "Send again". */}
+              {it.kind === COMMAND.posCheckout
+                ? <Link to={`/pos/pay/${it.id}`} className="flex-1"><Btn variant="secondary" block>Check status</Btn></Link>
+                : it.state !== "sending" && <Btn variant="secondary" className="flex-1" disabled={!online} busy={busy === `retry-${it.id}`} onClick={() => void retry(it)}>{it.state === "needs_review" ? "Send again" : "Retry"}</Btn>}
               {it.state !== "sending" && <Btn variant="ghost" className="flex-1" onClick={() => setDiscarding(it)}>Discard</Btn>}
             </div>
           </Card>
@@ -111,7 +115,8 @@ export function SyncScreen() {
 
       <ConfirmDialog open={!!discarding} title="Discard this change?" danger confirmLabel="Discard" onCancel={() => setDiscarding(null)}
         onConfirm={() => void run("discard", async () => { if (discarding) await active?.store.outbox.discard(discarding.id); setDiscarding(null); })}>
-        <p>“{discarding?.label || discarding?.kind}” will be removed from this phone and <strong>never sent</strong>.</p>
+        <p>“{discarding?.label || discarding?.kind}” will be removed from this phone and <strong>not sent again</strong>.</p>
+        {discarding?.state !== "draft" && <p className="mt-1">It may already have reached the server: discarding it here does not undo anything recorded there.{discarding?.kind === COMMAND.posCheckout ? " Use “Check status” first to see whether this sale was charged." : ""}</p>}
       </ConfirmDialog>
 
       <Modal show={logoutAsk !== null} onClose={() => setLogoutAsk(null)} size="md" position="center">
