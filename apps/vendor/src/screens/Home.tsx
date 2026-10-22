@@ -29,7 +29,7 @@ export function Home() {
   const live = !!d;
   const cachedLow = inv.rows.filter((i) => i.low_stock).length;
   const cachedOpen = orders.rows.filter((o) => ["pending", "reserved", "confirmed", "preparing", "ready_for_pickup"].includes(o.status)).length;
-  const cachedPublished = listings.rows.filter((l) => l.publication_status === "published").length;
+  const cachedPublished = new Set(listings.rows.filter((l) => l.publication_status === "published").map((l) => l.inventory_item_id)).size;
 
   return (
     <Screen title={profile?.tenant?.name ?? "Home"}>

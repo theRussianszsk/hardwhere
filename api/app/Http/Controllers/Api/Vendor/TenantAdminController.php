@@ -48,7 +48,7 @@ class TenantAdminController extends Controller
             'sales_today_cents' => (int) (clone $sales)->sum('total_cents'),
             'low_stock_count' => $lowStock,
             'open_orders' => $ctx->can('orders.view') ? Order::query()->forTenant($ctx)->whereIn('status', ['reserved', 'confirmed', 'preparing', 'ready_for_pickup'])->count() : null,
-            'published_listings' => TenantListing::query()->forTenant($ctx)->where('publication_status', 'published')->count(),
+            'published_listings' => TenantListing::query()->forTenant($ctx)->where('publication_status', 'published')->distinct()->count('inventory_item_id'),
             'inventory_items' => InventoryItem::query()->forTenant($ctx)->count(),
         ]]);
     }
