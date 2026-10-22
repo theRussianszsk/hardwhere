@@ -7,7 +7,7 @@ import {
   ConfidenceBadge, ConfirmDialog as KitConfirm, DemoAiBadge as KitDemo, EmptyState as KitEmpty, ErrorState as KitError, FormField, LoadingState as KitLoading, MatchBadge as KitMatch,
   Money, QuantityStepper as KitQty, StatusPill as KitStatus, StockBadge as KitStock, WarningList as KitWarn,
 } from "@hardwhere/shared/ui";
-import type { AvailabilityStatus, MatchClass } from "@hardwhere/shared";
+import type { AnalysisClass, AvailabilityStatus } from "@hardwhere/shared";
 import { imgUrl } from "../config";
 
 export { ConfidenceBadge, FormField, Money };
@@ -57,7 +57,7 @@ export function StatusPill({ status, label }: { status: string; label?: string }
   return <KitStatus status={label === "Submitted" && ["sending", "queued", "draft"].includes(status) ? "submitted" : status} />;
 }
 export const StockBadge = ({ status, quantity, cachedAsOf = null }: { status: AvailabilityStatus; quantity?: number | null; cachedAsOf?: string | null }) => <KitStock status={status} quantity={quantity} cachedAsOf={cachedAsOf} />;
-export const MatchBadge = ({ cls }: { cls: MatchClass }) => <KitMatch classification={cls} />;
+export const MatchBadge = ({ cls }: { cls: AnalysisClass }) => <KitMatch classification={cls} />;
 export const DemoAiBadge = ({ label }: { label?: string }) => (label ? <span title={label}><KitDemo isMock /></span> : <KitDemo isMock />);
 export const WarningList = ({ warnings }: { warnings: string[] }) => <KitWarn warnings={warnings} />;
 

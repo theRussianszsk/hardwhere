@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { COMMAND, formatPeso, humanizeError, newId, normalizePhMobile, useActive, type CheckoutInput, type PaymentMethod, type PosCheckoutPayload } from "@hardwhere/shared";
 import { useCart } from "../lib/cart";
+import { UnresolvedCheckout } from "../lib/CommandStatus";
 import { useOnline } from "../lib/hooks";
 import { Screen } from "../shell";
 import { Alert, Btn, Card, ConfirmDialog, EmptyState, LoadingState, Money, PesoInput, TextField, cx } from "../ui";
@@ -11,6 +12,9 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "card", label: "Card" }, { value: "bank_transfer", label: "Bank transfer" }, { value: "other", label: "Other" },
 ];
 const looksLikeCardNumber = (s: string) => /^\d{13,19}$/.test(s.replace(/[\s-]/g, ""));
+/** Likely cash handed over: the total rounded up to the next ₱100, ₱500 and ₱1,000 (e.g. ₱1,450 -> ₱1,500, ₱2,000). */
+const quickTenders = (total: number) =>
+  [...new Set([10_000, 50_000, 100_000].map((step) => Math.ceil(total / step) * step))].filter((c) => c > total);
 
 export function Checkout() {
   const cartApi = useCart();
@@ -66,6 +70,7 @@ export function Checkout() {
 
   return (
     <Screen title="Checkout" back="/pos">
+      {cartApi.locked && cart.checkoutKey && <UnresolvedCheckout id={cart.checkoutKey} />}
       {!online && <Alert tone="warn" live="assertive"><strong>Checkout needs a connection — your cart is saved.</strong> Stock and prices are confirmed by the server at the moment of sale.</Alert>}
 
       <Card className="space-y-1 text-sm">
@@ -93,7 +98,7 @@ export function Checkout() {
           <PesoInput label="Cash received" cents={tendered} onChange={setTendered} error={tenderError} />
           <div className="flex flex-wrap gap-2" role="group" aria-label="Quick amounts">
             <Btn variant="secondary" onClick={() => setTendered(totals.total)}>Exact</Btn>
-            {[100, 200, 500, 1000].filter((n) => n * 100 >= totals.total).slice(0, 3).map((n) => <Btn key={n} variant="secondary" onClick={() => setTendered(n * 100)}>₱{n}</Btn>)}
+            {quickTenders(totals.total).map((c) => <Btn key={c} variant="secondary" onClick={() => setTendered(c)}>{formatPeso(c)}</Btn>)}
           </div>
           <p className="text-lg font-bold text-emerald-800" aria-live="polite">Change: {change !== null && change >= 0 ? formatPeso(change) : "—"}</p>
         </div>
@@ -110,7 +115,7 @@ export function Checkout() {
       </details>
 
       {error && <Alert tone="error" live="assertive">{error}</Alert>}
-      <Btn block variant="success" className="min-h-14 text-base" disabled={!valid || !online} onClick={() => setConfirm(true)}>Charge {formatPeso(totals.total)}</Btn>
+      <Btn block variant="success" className="min-h-14 text-base" disabled={!valid || !online || cartApi.locked} onClick={() => setConfirm(true)}>Charge {formatPeso(totals.total)}</Btn>
 
       <ConfirmDialog open={confirm} title="Complete this sale?" confirmLabel="Yes, charge it" busy={busy} onCancel={() => setConfirm(false)} onConfirm={() => void pay()}>
         <p>Total <strong>{formatPeso(totals.total)}</strong> by <strong>{METHODS.find((m) => m.value === method)!.label}</strong>.</p>

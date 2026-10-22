@@ -45,6 +45,12 @@ class ReservationService
                     $to === OrderStatus::Expired => $this->settle($reservation, $order, 'reservation_release', 0, 'expired', null, 'Reservation expired'),
                     default => null,
                 };
+                // A store that confirmed or readied the order has committed to it: the customer gets a pickup window from now,
+                // not whatever is left of the initial hold (which could lapse minutes after the item was bagged).
+                if (in_array($to, [OrderStatus::Confirmed, OrderStatus::ReadyForPickup], true)) {
+                    $hold = now()->addMinutes((int) config('hardwhere.marketplace.pickup_hold_minutes'));
+                    $hold->greaterThan($reservation->expires_at) && $reservation->update(['expires_at' => $hold]);
+                }
             }
 
             $attrs += match ($to) {

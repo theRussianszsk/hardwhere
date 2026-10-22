@@ -22,6 +22,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="AI_PROVIDER" value="mock"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
@@ -30,6 +31,13 @@
         <env name="DB_DATABASE" value="hardwhere_test" force="true"/>
         <server name="DB_CONNECTION" value="pgsql" force="true"/>
         <server name="DB_DATABASE" value="hardwhere_test" force="true"/>
+        <!-- Tests must never reach a real AI provider or spend real credits, whatever api/.env contains. -->
+        <env name="AI_PROVIDER" value="mock" force="true"/>
+        <env name="AI_OPENAI_API_KEY" value="" force="true"/>
+        <env name="GEMMA_API_KEY" value="" force="true"/>
+        <server name="AI_PROVIDER" value="mock" force="true"/>
+        <server name="AI_OPENAI_API_KEY" value="" force="true"/>
+        <server name="GEMMA_API_KEY" value="" force="true"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

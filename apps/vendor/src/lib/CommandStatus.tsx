@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useActive } from "@hardwhere/shared";
 import { useOnline, useOutboxItem } from "./hooks";
 import { Alert, Btn, StatusPill } from "../ui";
@@ -47,6 +48,17 @@ export function CommandStatus({ id, title, onConfirmed, onDismiss, confirmedText
         {(item.state === "queued" || item.state === "needs_review" || item.state === "rejected") && <Btn variant="ghost" onClick={() => void discard()}>Discard</Btn>}
         {item.state === "confirmed" && onDismiss && <Btn variant="ghost" onClick={onDismiss}>Dismiss</Btn>}
       </div>
+    </Alert>
+  );
+}
+
+/** Shown wherever the POS cart could be changed while its last charge has no known outcome (the cart is locked until it does). */
+export function UnresolvedCheckout({ id }: { id: string }) {
+  return (
+    <Alert tone="warn" live="assertive">
+      <p className="font-semibold">Previous charge not resolved — check it first</p>
+      <p>The server may already have recorded the last sale of this cart, so the cart is locked to avoid charging the customer twice.</p>
+      <Link className="mt-1 inline-block font-semibold underline" to={`/pos/pay/${id}`}>Check the payment status</Link>
     </Alert>
   );
 }

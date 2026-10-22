@@ -29,6 +29,8 @@ class CatalogMatcher
 
     public const INSUFFICIENT = 'insufficient_confidence';
 
+    public const NOT_HARDWARE = 'not_hardware';
+
     /** @var array<string, string>|null attribute key => human label, for keys that make products commercially different */
     private ?array $axes = null;
 
@@ -38,18 +40,25 @@ class CatalogMatcher
      */
     public function match(ProductExtraction $x, ?int $tenantId = null, ?Builder $restrictTo = null, int $limit = 6): array
     {
+        // A non-hardware item has no honest match in a hardware catalog; offering the "closest" product would only mislead.
+        if (! $x->isHardware) {
+            return ['classification' => self::NOT_HARDWARE, 'requires_confirmation' => true, 'warnings' => ['Not a hardware product'], 'candidates' => []];
+        }
+
         $warnings = [];
         $barcode = $x->barcodeText && strlen($x->barcodeText) >= 8 ? $x->barcodeText : null;
         $modelKey = Text::key($x->model ?? $x->partNumber);
 
         $variants = $this->retrieve($x, $tenantId, $barcode, $modelKey, $restrictTo);
-        $sims = $variants->isEmpty() ? [] : DB::table('products')->whereIn('id', $variants->pluck('product_id')->unique())
-            ->selectRaw('id, similarity(search_text, ?) AS sim', [$this->queryText($x)])->pluck('sim', 'id')->all();
+        // sim: whole-text trigram similarity. cover: how fully the product name ("claw hammer") appears in the catalog text.
+        $rows = $variants->isEmpty() ? collect() : DB::table('products')->whereIn('id', $variants->pluck('product_id')->unique())
+            ->selectRaw('id, similarity(search_text, ?) AS sim, word_similarity(?, search_text) AS cover', [$this->queryText($x), Text::normalize((string) $x->name)])->get()->keyBy('id');
         $barcodeVariant = $barcode ? ProductBarcode::query()->where('code', $barcode)->value('variant_id') : null;
 
         $candidates = [];
         foreach ($variants as $variant) {
-            $c = $this->score($x, $variant, (float) ($sims[$variant->product_id] ?? 0), $modelKey, $barcodeVariant === $variant->id);
+            $row = $rows[$variant->product_id] ?? null;
+            $c = $this->score($x, $variant, (float) ($row->sim ?? 0), $x->name ? (float) ($row->cover ?? 0) : 0.0, $modelKey, $barcodeVariant === $variant->id);
             $c && $candidates[] = $c;
         }
         // Contradictory evidence (the printed barcode belongs to another brand/model) means nothing may be called an exact match.
@@ -115,8 +124,10 @@ class CatalogMatcher
         }
 
         $text = $this->queryText($x);
+        $name = Text::normalize((string) $x->name);
         if ($text !== '') {
-            $productIds = DB::table('products')->whereRaw('similarity(search_text, ?) > 0.18', [$text])->orderByRaw('similarity(search_text, ?) DESC', [$text])->limit(12)->pluck('id');
+            $productIds = DB::table('products')->where(fn ($q) => $q->whereRaw('similarity(search_text, ?) > 0.18', [$text])->when($name !== '', fn ($w) => $w->orWhereRaw('word_similarity(?, search_text) >= 0.8', [$name])))
+                ->orderByRaw('similarity(search_text, ?) DESC', [$text])->limit(12)->pluck('id');
             $ids = $ids->merge(ProductVariant::query()->whereIn('product_id', $productIds)->pluck('id'));
         }
 
@@ -132,7 +143,7 @@ class CatalogMatcher
     }
 
     /** @return array<string, mixed>|null */
-    private function score(ProductExtraction $x, ProductVariant $v, float $sim, string $modelKey, bool $barcodeHit): ?array
+    private function score(ProductExtraction $x, ProductVariant $v, float $sim, float $cover, string $modelKey, bool $barcodeHit): ?array
     {
         $p = $v->product;
         $matched = [];
@@ -212,6 +223,18 @@ class CatalogMatcher
             }
 
             return $this->candidate($v, self::EXACT, 1.0, array_merge($matched, ['barcode']), $mismatched, $warn);
+        }
+
+        // Without a brand or model agreeing, only a strong name match in the same category counts; weak text overlap is not a match.
+        $identified = $model >= 0.6 || $brand === 1.0;
+        // Same kind of product (an unbranded "claw hammer" vs a catalog claw hammer): kept, but never as the same item.
+        $sameTypeOnly = ! $identified && ($text ?? 0) < 0.7;
+        if (! $identified && ($category === 0.25 || ($sameTypeOnly && ! ($category === 1.0 && $cover >= 0.8)))) {
+            return null;
+        }
+        if ($sameTypeOnly) {
+            $score = min(max($score, 0.5), 0.69);
+            $warn[] = 'Same product type; brand and model not confirmed';
         }
 
         if ($axisConflicts) {

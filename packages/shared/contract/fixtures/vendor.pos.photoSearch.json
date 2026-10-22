@@ -2,8 +2,6 @@
     "analysis": {
         "id": 1,
         "purpose": "pos_search",
-        "provider": "mock",
-        "model": "mock-fixtures-v1",
         "is_mock": true,
         "provider_label": "Demo AI (deterministic mock, not live inference)",
         "extracted": {
@@ -29,7 +27,13 @@
             "image_sufficient": true,
             "notes": [
                 "Demo AI (deterministic mock): not a live model result."
-            ]
+            ],
+            "product_type": null,
+            "subcategory": null,
+            "material": null,
+            "description": null,
+            "estimated_price_php": null,
+            "is_hardware": true
         },
         "classification": "exact_match",
         "overall_confidence": 0.93,

@@ -11,6 +11,7 @@ use App\Models\Store;
 use App\Models\TenantListing;
 use App\Services\InventoryService;
 use App\Services\ReservationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Tests\Support\World;
 
@@ -131,6 +132,23 @@ it('does not auto-expire an order the store is already preparing', function () {
     Reservation::query()->where('order_id', $id)->update(['expires_at' => now()->subHour()]);
     app(ReservationService::class)->expireDue();
     expect(Order::find($id)->status)->toBe('preparing')->and(($this->snap)()->reserved)->toBe(2);
+});
+
+it('gives a confirmed or ready order a fresh pickup window instead of the initial hold', function () {
+    config(['hardwhere.marketplace.pickup_hold_minutes' => 60 * 24]);
+    $id = ($this->place)($this->h, 2)->json('data.id'); // initial hold: tenant reservation_ttl_minutes (120)
+    ($this->move)($id, 'confirmed')->assertOk();
+    $this->travel(20)->hours(); // long past the initial 2-hour hold
+    expect(app(ReservationService::class)->expireDue())->toBe(0);
+    ($this->move)($id, 'preparing')->assertOk();
+    ($this->move)($id, 'ready_for_pickup')->assertOk(); // the window restarts when the item is bagged
+    $this->travel(10)->hours();
+    expect(app(ReservationService::class)->expireDue())->toBe(0)
+        ->and(Order::find($id)->status)->toBe('ready_for_pickup')->and(($this->snap)()->reserved)->toBe(2);
+    $this->getJson("/api/v1/customer/orders/$id", $this->h)->assertOk()
+        ->assertJsonPath('data.reservation.expires_at', fn ($at) => abs(now()->diffInMinutes(Carbon::parse($at)) - 14 * 60) < 2);
+    $this->travel(15)->hours(); // an uncollected order still lapses eventually
+    expect(app(ReservationService::class)->expireDue())->toBe(1)->and(($this->snap)()->reserved)->toBe(0);
 });
 
 it('validates the order against the listing rules', function () {

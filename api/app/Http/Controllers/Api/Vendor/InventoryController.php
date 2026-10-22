@@ -17,7 +17,6 @@ use App\Models\Category;
 use App\Models\InventoryItem;
 use App\Models\InventoryLocation;
 use App\Models\Product;
-use App\Models\ProductBarcode;
 use App\Models\ProductVariant;
 use App\Models\PurchaseReceipt;
 use App\Models\StockLedgerEntry;
@@ -54,6 +53,10 @@ class InventoryController extends Controller
                         }
                     });
             });
+        }
+        // Comma-separated variant ids: the live scanner asks "which of these recognised variants do we already stock?".
+        if ($variantIds = array_values(array_filter(array_map('intval', explode(',', (string) $request->query('variant_ids')))))) {
+            $q->whereIn('inventory_items.variant_id', array_slice($variantIds, 0, 50));
         }
         if ($request->boolean('low_stock')) {
             $q->whereRaw('(SELECT COALESCE(SUM(on_hand - reserved), 0) FROM stock_snapshots WHERE inventory_item_id = inventory_items.id) <= inventory_items.reorder_threshold');
@@ -153,13 +156,7 @@ class InventoryController extends Controller
     {
         $ctx = $this->ctx();
         $ctx->can('inventory.create') || throw ApiException::forbidden();
-        $d = $request->validated();
-        foreach ($d['variants'] ?? [] as $v) {
-            foreach (array_keys($v['barcodes'] ?? []) as $code) {
-                ProductBarcode::query()->where('code', (string) $code)->exists() && throw ApiException::conflict('barcode_conflict', "Barcode $code already belongs to another catalog product.");
-            }
-        }
-        $product = $this->catalog->createProduct($d, $ctx->tenantId);
+        $product = $this->catalog->createProduct($request->validated(), $ctx->tenantId); // rejects barcodes already in the catalog
 
         return (new ProductResource($product->load('category')))->response()->setStatusCode(201);
     }

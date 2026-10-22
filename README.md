@@ -14,8 +14,26 @@ Two mobile apps and one API for hardware stores:
 > but **no APK/AAB/IPA was built or run**: the development machine has no JDK/Android SDK/Xcode. Native-only guarantees
 > (SQLCipher-encrypted database, Keychain/Keystore token storage, native camera and barcode scanner) are implemented
 > against the plugins' real typings but are **unverified on a device**. In the browser the database is *not* encrypted and the
-> token lives in `sessionStorage` (development only). Gemma 4 is wired but **not live-verified** (no API key); the demo uses a
-> clearly-labelled deterministic mock.
+> token lives in `sessionStorage` (development only). **Gemma 4 runs live** through OpenRouter (`AI_PROVIDER=openai`, verified on real
+> product photos, about 2–5 s per photo); with `AI_PROVIDER=mock` (the default) the apps use a clearly-labelled deterministic mock (*Demo AI*).
+
+## Slides
+https://drive.google.com/file/d/1U-Ku0Sc_hNlbmDZKJe7fjSY68P0wWSTY/view?usp=sharing
+
+Same deck in this repository: [inventOS_pitch_slides_4x3.pdf](inventOS_pitch_slides_4x3.pdf)
+
+## Business plan
+**Problem:** Philippine neighbourhood hardware stores sell thousands of spec-sensitive items, and most have no barcode: loose nails, PVC fittings, bolts, cut lumber, repacked sand. Stock lives in notebooks or the owner's memory, so owners do not know what is low or not selling. Buyers who need an exact part today (a 20A breaker, an M10 bolt) call or drive from store to store, because online marketplaces deliver in days.
+
+**Target users:** Independent hardware stores with 1–3 branches and 1–10 staff, starting with 10 pilot stores in Cebu City and Mandaue. Their buyers (contractors, foremen, electricians, plumbers, homeowners) use the customer app for free.
+
+**Solution and value:** Staff photograph a product instead of scanning a barcode. Gemma 4 reads the brand, model and specs, proposes the catalog match, and a person confirms. Sales then update stock atomically, and the same live stock feeds a marketplace where buyers compare nearby stores by price, availability and distance, and reserve. Variants such as 720W vs 840W grinders are never merged.
+
+**Revenue / sustainability:** Free Starter plan (300 SKUs, 50 AI intakes a month); Pro at ₱799/month (unlimited SKUs, marketplace listing); Multi-branch at ₱1,999/month. Later: ₱2,500 done-for-you shelf onboarding and featured listings. AI cost is small: about ₱0.02 per photo in our live tests.
+
+**Competition:** Notebooks and Excel are free but give no live stock. Loyverse and local POS systems (UTAK, StoreHub, about ₱1,500–2,300/month) are barcode-centric and built mainly for food and beverage. Shopee and Lazada deliver in days; big-box stores are far away. We combine AI photo intake for unbarcoded hardware with local discovery fed by daily POS use.
+
+**Next steps:** Run the 10-store Cebu pilot and measure intake accuracy; ship native Android builds; add bookkeeper reports (inventory valuation, cost of goods sold, CSV export) for the partner channel.
 
 ## Architecture
 
@@ -47,7 +65,8 @@ Two mobile apps and one API for hardware stores:
   (no offline paid sales — that would need stock leasing; out of scope), marketplace orders/reservations. A queued command is never "done"
   until the server answers 2xx (or replays an idempotent result); 409 → *needs review*, 422/403 → *rejected*, network/5xx/429 → bounded
   exponential backoff with jitter.
-* **AI.** `VisionProvider` interface → `MockVisionProvider` (default, deterministic, every result labelled *Demo AI*) or
+* **AI.** `VisionProvider` interface → `MockVisionProvider` (default, deterministic, every result labelled *Demo AI*),
+  `OpenAiCompatibleVisionProvider` (Gemma 4 via OpenRouter or any OpenAI-compatible endpoint, live-verified) or
   `GemmaVisionProvider` (Gemini API `generateContent`, model ids documented by Google: `gemma-4-26b-a4b-it`, `gemma-4-31b-it`).
   Model output is validated strictly. A matcher combines barcode/GTIN, manufacturer+model, SKU/part numbers, trigram text similarity,
   brand, category and structured variant attributes and returns *exact / likely same / likely variant / possible duplicate / new
@@ -106,6 +125,7 @@ Without Docker: copy `api/.env.example` to `api/.env`, point `DB_*` at your Post
 |---|---|
 | `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSLMODE` (or `DB_URL`) | PostgreSQL / Neon |
 | `VENDOR_TOKEN_TTL_MINUTES` (1440), `CUSTOMER_TOKEN_TTL_MINUTES` (43200) | Sanctum token lifetime |
+| `PICKUP_HOLD_MINUTES` (1440) | how long a confirmed / ready-for-pickup order keeps its stock held, counted from that transition |
 | `AI_PROVIDER` (`mock` \| `gemma` \| `openai`), `AI_MAX_IMAGE_KB` | AI provider selection |
 | `GEMMA_API_KEY`, `GEMMA_MODEL`, `GEMMA_BASE_URL`, `GEMMA_TIMEOUT` | Gemma 4 via the Gemini API |
 | `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY`, `AI_OPENAI_MODEL`, `AI_OPENAI_TIMEOUT`, `AI_OPENAI_JSON_MODE` | any OpenAI-compatible vision endpoint (OpenRouter, vLLM, Ollama) |
@@ -136,7 +156,7 @@ file name (`makita-drill.jpg`), else the mock returns *insufficient confidence* 
 AI_PROVIDER=openai
 AI_OPENAI_BASE_URL=https://openrouter.ai/api/v1
 AI_OPENAI_API_KEY=<your OpenRouter key>          # server-side only, api/.env is gitignored
-AI_OPENAI_MODEL=google/gemma-4-26b-a4b-it:free   # or google/gemma-4-26b-a4b-it, google/gemma-4-31b-it (image input confirmed in OpenRouter's model list)
+AI_OPENAI_MODEL=google/gemma-4-26b-a4b-it        # recommended for demos; ":free" works too but is often rate-limited (HTTP 429)
 AI_OPENAI_JSON_MODE=false                        # true adds response_format=json_object where the backend supports it
 ```
 Sends `POST {base}/chat/completions` with a text part and an `image_url` data URI. Local Ollama: `AI_OPENAI_BASE_URL=http://localhost:11434/v1`, no key needed.
@@ -145,8 +165,14 @@ Sends `POST {base}/chat/completions` with a text part and an `image_url` data UR
 **3. `gemma` — Gemma 4 through the Gemini API** (`GEMMA_API_KEY`, `GEMMA_MODEL=gemma-4-26b-a4b-it` or `gemma-4-31b-it`): `POST {base}/models/{model}:generateContent` with `inline_data`.
 
 In every live mode the model's reply is validated strictly (clamped confidences, whitelisted attribute keys, bounded lengths) and fed to the same catalog matcher; a failure answers `503 ai_unavailable`
-and the apps offer manual entry (inference is never faked offline). **The request contracts are covered by HTTP-fake tests; no live endpoint has been exercised in this repository** — to verify live,
-set the variables, upload a photo to `POST /api/v1/vendor/ai/analyses` (multipart `image`, header `Idempotency-Key`) and confirm `is_mock=false` in the response.
+and the apps offer manual entry (inference is never faked offline). Request contracts are covered by HTTP-fake tests (no network in CI).
+
+**Live verification (22 Oct 2026, `openai` provider, OpenRouter `google/gemma-4-26b-a4b-it`).** Real product photos were sent to `POST /api/v1/vendor/ai/analyses`:
+a Stanley PowerLock tape measure was read as brand *Stanley* and matched to the catalog's Stanley PowerLock variants (the person picks 5 m or 8 m);
+an IEK BA47-29 C16 breaker was read correctly (brand, model, 16 A, 2-pole) and, as that brand is not in the catalog, returned as a new product candidate;
+a photo with no visible label returned *insufficient confidence* instead of a guess. A call takes about 2–5 s (occasional spikes up to ~20 s at the provider)
+and costs about ₱0.02. The `:free` model variant answered `429 Too Many Requests` under load, so use the paid id for demos.
+To check yourself: set the variables, upload a photo and confirm `is_mock=false` and `provider_label` "Live AI" in the response. The `gemma` (Gemini API) provider has not been run live.
 
 ## API contract (server ↔ TypeScript)
 
@@ -166,6 +192,8 @@ npm run typecheck && npm run build            # strict TS for shared + both apps
 PHP coverage includes: tenant isolation (API, Eloquent scope, composite FKs), role matrix, token lifecycle, stock ledger integrity (append-only trigger, CHECKs), POS checkout, marketplace orders and reservations (state machine, expiry), listing visibility, price isolation, AI extraction validation and the Gemma request contract, matcher (barcode/SKU/variants/duplicates), upload hardening, sync (snapshot, deltas, tombstones, revoked visibility), seed integrity, error envelope, and **real parallel-process concurrency** (`tests/Concurrency`: N PHP processes race for the same stock on committed data; plus an xmin-horizon test with two live connections).
 
 ## Demo script (the 18-step scenario)
+
+A 107 s screen recording of the flow below (vendor and customer phones side by side, live Gemma 4 via OpenRouter for the photo step) is in [`docs/demo/hardwhere-demo.mp4`](docs/demo/hardwhere-demo.mp4). Sign out of the vendor app via the sync pill (top right) → **Sign out**; run `scripts/demo-reset.sh` before a live demo.
 
 `api/tests/Feature/DemoScenarioTest.php` runs this end to end over HTTP; the apps reproduce it by hand:
 
@@ -189,7 +217,7 @@ Camera/photos (both apps) and coarse location (customer) permission strings are 
 ## Known limitations & hackathon trade-offs
 
 * No native build/device verification (see above). Browser storage is unencrypted dev storage.
-* Gemma 4 not exercised live (the `openai` and `gemma` providers are tested against HTTP fakes only). Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
+* Live AI is verified only through the `openai` provider (OpenRouter); the `gemma` (Gemini API) provider is tested against HTTP fakes only. Free OpenRouter models are rate-limited. Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
 * Offline *sales* are out of scope by design: stock cannot be kept consistent across disconnected devices without allocation/leasing.
 * Customer photo search requires a signed-in customer (AI cost control); text search is anonymous.
 * Browser dev note: the browser SQLite (jeep-sqlite) hydrates via `requestAnimationFrame`, so a tab opened in the *background* shows "Opening your store…" until it is shown. Use one focused tab; the web token lives in `sessionStorage`, so a new tab needs a fresh sign-in.

@@ -15,8 +15,10 @@ use App\Models\Product;
 use App\Models\StockLedgerEntry;
 use App\Models\TenantListing;
 use App\Models\User;
+use App\Services\CatalogService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\World;
@@ -121,6 +123,19 @@ it('rejects duplicate barcodes when proposing a candidate', function () {
         ->assertStatus(409)->assertJsonPath('error.code', 'barcode_conflict');
 });
 
+it('creates a candidate with a 12-digit UPC and rejects unknown barcode types and duplicate barcodes on intake', function () {
+    $cat = Category::where('slug', 'building-supplies')->value('id');
+    $confirm = fn (array $barcodes, string $key) => $this->postJson('/api/v1/vendor/ai/analyses/'.($this->analyze)('unknown-product', null, $key)->json('data.id').'/confirm', ['decision' => 'created_candidate',
+        'new_product' => ['category_id' => $cat, 'name' => "Sealant $key", 'variants' => [['name' => "Sealant $key", 'barcodes' => $barcodes]]],
+        'inventory' => ($this->inventory)()], $this->h + idem("c-$key"));
+
+    $confirm(['012345678905' => 'UPCA'], 'a')->assertStatus(422)->assertJsonPath('error.fields', fn ($f) => isset($f['new_product.variants.0.barcodes.012345678905']));
+    $confirm(['012345678905' => 'UPC'], 'b')->assertCreated();
+    $confirm(['4800000100017' => 'EAN13'], 'c')->assertStatus(409)->assertJsonPath('error.code', 'barcode_conflict'); // seeded Stanley hammer
+    expect(InventoryItem::query()->forTenant($this->w['ctx'])->count())->toBe(1)
+        ->and(DB::table('product_barcodes')->where('code', '012345678905')->value('type'))->toBe('UPC');
+});
+
 it('lets a reviewer reject the suggestion without stocking anything', function () {
     $a = ($this->analyze)('blurry')->json('data');
     $this->postJson("/api/v1/vendor/ai/analyses/{$a['id']}/confirm", ['decision' => 'rejected'], $this->h + idem('rej-1'))->assertCreated()->assertJsonPath('data.decision', 'rejected');
@@ -185,8 +200,10 @@ describe('Gemma provider', function () {
             return str_ends_with($req->url(), '/v1beta/models/gemma-4-26b-a4b-it:generateContent') && $req->hasHeader('x-goog-api-key', 'test-key')
                 && $part[0]['inline_data']['mime_type'] === 'image/jpeg' && base64_decode($part[0]['inline_data']['data'], true) !== false && str_contains($part[1]['text'], 'ONE JSON object');
         });
-        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json('data.provider'))->toBe('gemma')->and($r->json('data.model'))->toBe('gemma-4-26b-a4b-it')
-            ->and($r->json('data.provider_label'))->toContain('Live AI')
+        // provider/model are recorded for audit but never shown to clients
+        expect(AiAnalysis::query()->withoutGlobalScopes()->find($r->json('data.id'))->only(['provider', 'model']))->toBe(['provider' => 'gemma', 'model' => 'gemma-4-26b-a4b-it']);
+        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json())->not->toHaveKey('data.provider')->and(json_encode($r->json()))->not->toContain('gemma-4')
+            ->and($r->json('data.provider_label'))->toBe('AI recognition')
             ->and($r->json('data.extracted.attributes'))->toBe(['voltage_v' => 220])        // invalid keys / nested values dropped
             ->and($r->json('data.extracted.confidence.brand'))->toEqual(1.0)->and($r->json('data.extracted.confidence.model'))->toEqual(0.0) // clamped / non-numeric
             ->and($r->json('data.extracted.barcode_text'))->toBe('4800000100017')
@@ -257,8 +274,9 @@ describe('OpenAI-compatible provider', function () {
             return $req->url() === 'https://openrouter.ai/api/v1/chat/completions' && $req->hasHeader('Authorization', 'Bearer or-test-key') && $req['model'] === 'google/gemma-4-26b-a4b-it:free'
                 && $parts[0]['type'] === 'text' && str_starts_with($parts[1]['image_url']['url'], 'data:image/jpeg;base64,') && ! isset($req['response_format']);
         });
-        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json('data.provider'))->toBe('openai-compatible')->and($r->json('data.model'))->toBe('google/gemma-4-26b-a4b-it:free')
-            ->and($r->json('data.provider_label'))->toContain('Live AI')->and($r->json('data.extracted.model'))->toBe('HP1630')->and($r->json('data.candidates.0.variant.model_number'))->toBe('HP1630');
+        expect(AiAnalysis::query()->withoutGlobalScopes()->find($r->json('data.id'))->only(['provider', 'model']))->toBe(['provider' => 'openai-compatible', 'model' => 'google/gemma-4-26b-a4b-it:free']);
+        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json())->not->toHaveKey('data.model')->and(json_encode($r->json()))->not->toContain('gemma-4-26b')
+            ->and($r->json('data.provider_label'))->toBe('AI recognition')->and($r->json('data.extracted.model'))->toBe('HP1630')->and($r->json('data.candidates.0.variant.model_number'))->toBe('HP1630');
         expect(json_encode($r->json()))->not->toContain('or-test-key');
     });
 
@@ -280,4 +298,21 @@ describe('OpenAI-compatible provider', function () {
         ($this->analyze)(null)->assertStatus(503)->assertJsonPath('error.details.reason', 'AI_OPENAI_BASE_URL and AI_OPENAI_MODEL must be configured.');
         expect(AiAnalysis::query()->count())->toBe(0);
     });
+});
+
+it('normalises unit-suffixed model attributes to numbers so numeric search and comparison work', function () {
+    $x = ProductExtraction::fromModelOutput(['name' => 'Drill', 'attributes' => [
+        'voltage_v' => '18V', 'wattage_w' => '710 W', 'length_mm' => '1.5 mm', 'capacity_l' => '4 L', 'amperage_a' => 20, 'color' => 'Teal and Black', 'series' => 'LXT', 'size' => '#10 x 1"', 'weight_oz' => 'about 16 oz',
+    ]]);
+    expect($x->attributes)->toBe(['voltage_v' => 18, 'wattage_w' => 710, 'length_mm' => 1.5, 'capacity_l' => 4, 'amperage_a' => 20, 'color' => 'Teal and Black', 'series' => 'LXT', 'size' => '#10 x 1"', 'weight_oz' => 'about 16 oz']);
+});
+
+it('finds a product by natural-language voltage even when the model said "18V" as text', function () {
+    $cat = Category::where('slug', 'power-tools')->value('id');
+    $x = ProductExtraction::fromModelOutput(['name' => 'Cordless drill', 'attributes' => ['voltage_v' => '18V']]);
+    $p = app(CatalogService::class)->createProduct(['category_id' => $cat, 'name' => 'Zenith 18V Cordless Drill', 'brand' => 'Zenith', 'variants' => [['name' => 'Zenith 18V', 'attributes' => $x->attributes]]]);
+    $w = World::tenant('zen');
+    World::stocked($w, $p->variants->first()->id, 5, 500000);
+    $found = collect($this->getJson('/api/v1/public/search?q='.urlencode('zenith 18v drill'))->assertOk()->json('data'))->pluck('id');
+    expect($found)->toContain($p->id);
 });

@@ -14,6 +14,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
 use App\Services\AiIntakeService;
+use App\Services\DemandMonitor;
 use App\Services\MarketplaceSearch;
 use App\Services\StockService;
 use App\Support\ApiException;
@@ -25,7 +26,7 @@ class MarketplaceController extends Controller
 {
     use ApiHelpers;
 
-    public function __construct(private MarketplaceSearch $search, private AiIntakeService $ai) {}
+    public function __construct(private MarketplaceSearch $search, private AiIntakeService $ai, private DemandMonitor $demand) {}
 
     public function categories()
     {
@@ -48,6 +49,8 @@ class MarketplaceController extends Controller
             'max_price_cents' => $request->filled('max_price_cents') ? (int) $request->query('max_price_cents') : null, 'per_page' => $this->perPage($request, 20)]);
         // Nothing on sale: say whether the catalog knows the product, so the app can tell the shopper no registered store sells it yet.
         $unlisted = $page->total() === 0 && $request->filled('q') ? $this->search->unlistedMatches((string) $request->query('q'), $request->query('category')) : collect();
+
+        $this->recordDemand(fn () => $this->demand->recordTextSearch(DemandMonitor::searcherKey($request), $request->only(['q', 'brand', 'category']), $page));
 
         return ProductResource::collection($page)->additional(['meta_extra' => ['server_time' => now()->toIso8601String(),
             'unlisted_matches' => $unlisted->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'brand' => $p->brand, 'model_number' => $p->model_number])->values()]]);
@@ -132,8 +135,19 @@ class MarketplaceController extends Controller
     public function photoSearch(AnalyzeImageRequest $request): JsonResponse
     {
         $analysis = $this->ai->analyze($request->user(), null, $request->file('image'), 'marketplace_search', $this->idempotencyKey($request), $request->validated('hint'), $this->ai->publiclyListed());
+        $this->recordDemand(fn () => $this->demand->recordPhotoSearch(DemandMonitor::searcherKey($request), $analysis));
         $analysis->candidates->isEmpty() && $analysis->classification === 'insufficient_confidence' && throw new ApiException('image_insufficient', $analysis->is_mock ? 'Demo AI can only recognise its built-in demo photos. Pick a demo photo, or connect a live model.' : 'That photo is not clear enough to identify. Try a closer, well-lit shot of the label.', 422, ['analysis' => (new AiAnalysisResource($analysis))->resolve()]);
 
         return response()->json(['data' => (new AiAnalysisResource($analysis))->resolve(), 'meta' => ['server_time' => now()->toIso8601String()]]);
+    }
+
+    /** Demand tracking is a side channel: a failure there must never fail the customer's search. */
+    private function recordDemand(\Closure $record): void
+    {
+        try {
+            $record();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

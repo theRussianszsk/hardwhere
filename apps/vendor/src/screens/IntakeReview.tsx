@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ApiError, humanizeError, newId, useActive, useAuth, useOnlineQuery, useServices,
-  type AiAnalysisDto, type AiAnalyzePayload, type ConfirmIntakeInput, type ExtractedProduct, type MatchCandidateDto,
+  useNow, type AiAnalysisDto, type AiAnalyzePayload, type ConfirmIntakeInput, type ExtractedProduct, type MatchCandidateDto,
 } from "@hardwhere/shared";
 import { PhotoThumb } from "@hardwhere/shared/ui";
 import { lastErrorText } from "../lib/CommandStatus";
@@ -20,7 +20,9 @@ interface Done { kind: "added" | "rejected"; inventoryItemId: number | null; nam
 
 const pretty = (f: string) => f.replace(/^attr:/, "").replace(/_/g, " ");
 const attrList = (a: Record<string, unknown> | undefined | null) => Object.entries(a ?? {}).map(([k, v]) => `${pretty(k)}: ${String(v)}`);
-const barcodeType = (c: string) => (/^\d{13}$/.test(c) ? "EAN13" : /^\d{12}$/.test(c) ? "UPCA" : /^\d{8}$/.test(c) ? "EAN8" : "CODE128");
+/** Barcode type by digit count. Must stay within the server's ProductBarcode::TYPES; the catalog only stores 8-14 digit codes. */
+const barcodeType = (c: string) => ({ 8: "EAN8", 12: "UPC", 13: "EAN13", 14: "GTIN14" } as Record<number, string>)[c.length] ?? "OTHER";
+const barcodeProblem = (c: string) => (c === "" || /^\d{8,14}$/.test(c) ? null : "A barcode is 8 to 14 digits. Leave it empty if you can't read it.");
 
 function initialDraft(a: AiAnalysisDto): IntakeDraft {
   const x = a.extracted;
@@ -38,6 +40,7 @@ export function IntakeReview() {
   const { online } = useOnline();
   const [done, setDone] = useState<Done | null>(null);
   const [busy, setBusy] = useState(false);
+  const now = useNow(1000);
   const photo = useStoredPhoto(item?.payload?.photoRef);
 
   if (done) return <DoneView done={done} />;
@@ -50,8 +53,8 @@ export function IntakeReview() {
       <Screen title="Analysing photo" back="/add">
         {photo && <PhotoThumb source={photo} alt="Your product photo" size={120} />}
         <div aria-live="polite" className="space-y-3">
-          {item.state === "sending" && <LoadingState label="The AI is looking at your photo…" />}
-          {item.state === "queued" && (online ? <LoadingState label="Uploading your photo…" /> : (
+          {item.state === "sending" && <LoadingState label={`The AI is reading your photo… ${Math.max(0, Math.round((now - new Date(item.updatedAt).getTime()) / 1000))}s (usually 3–10 s)`} />}
+          {item.state === "queued" && (online ? <LoadingState label={item.attempts > 0 ? `Retrying (attempt ${item.attempts + 1})${item.nextAttemptAt ? ` in ${Math.max(0, Math.ceil((new Date(item.nextAttemptAt).getTime() - now) / 1000))}s` : ""}… tap Try again to send now` : "Sending your photo…"} /> : (
             <Alert tone="warn" live="assertive"><strong>Saved — it will be analysed when you're back online.</strong> You can leave this screen; the photo stays queued on this phone. Or enter the item yourself now.</Alert>
           ))}
           {(item.state === "needs_review" || item.state === "rejected") && (
@@ -127,7 +130,7 @@ function ReviewBody({ analysis, outboxId, photoRef, photo, onDone }: { analysis:
 
   const problems = invProblems(d.inv);
   const npProblems: string[] = [];
-  if (d.mode === "new") { if (d.np.categoryId === null) npProblems.push("category"); if (!d.np.name.trim()) npProblems.push("name"); }
+  if (d.mode === "new") { if (d.np.categoryId === null) npProblems.push("category"); if (!d.np.name.trim()) npProblems.push("name"); if (barcodeProblem(d.np.barcode)) npProblems.push("barcode"); }
   const canSubmit = d.mode === "reject" || (d.mode !== "none" && Object.keys(problems).length === 0 && npProblems.length === 0);
   const displayName = d.mode === "new" ? d.np.name || "this product" : chosen ? (chosen.variant?.name ?? chosen.product.name) : "this product";
 
@@ -254,7 +257,7 @@ function ReviewBody({ analysis, outboxId, photoRef, photo, onDone }: { analysis:
             <TextField label="Model" value={d.np.model} onChange={(e) => set({ np: { ...d.np, model: e.target.value } })} maxLength={80} />
           </div>
           <div className="space-y-1"><p className="text-sm font-medium text-slate-800">Pack quantity</p><QuantityStepper label="Pack quantity" value={d.np.pack} min={1} max={100000} onChange={(n) => set({ np: { ...d.np, pack: n } })} /></div>
-          <TextField label="Barcode (optional)" inputMode="numeric" value={d.np.barcode} onChange={(e) => set({ np: { ...d.np, barcode: e.target.value.replace(/\s/g, "") } })} hint="Only if you can read it on the package." />
+          <TextField label="Barcode (optional)" inputMode="numeric" value={d.np.barcode} onChange={(e) => set({ np: { ...d.np, barcode: e.target.value.replace(/\s/g, "") } })} error={barcodeProblem(d.np.barcode) ?? (code === "barcode_conflict" ? apiErr!.message : null)} hint="Only if you can read it on the package." />
         </Card>
       )}
 
