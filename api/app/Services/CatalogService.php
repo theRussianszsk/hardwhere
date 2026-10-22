@@ -8,6 +8,7 @@ use App\Models\ProductAlias;
 use App\Models\ProductAttribute;
 use App\Models\ProductBarcode;
 use App\Models\ProductVariant;
+use App\Models\TenantListing;
 use App\Support\ApiException;
 use App\Support\Text;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,8 @@ class CatalogService
             $product->update(['status' => 'approved', 'row_version' => $product->row_version + 1]);
             $product->variants()->update(['status' => 'approved']);
             $this->recordSync($product);
+            // a listing published while this was a candidate (possible before publishing was gated) was withheld from the marketplace; re-emit so public caches pick it up
+            TenantListing::query()->withoutGlobalScopes()->where('product_id', $product->id)->get(['id', 'tenant_id'])->each(fn (TenantListing $l) => $this->sync->listing($l->tenant_id, $l->id));
         });
 
         return $product;

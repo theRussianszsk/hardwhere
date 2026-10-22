@@ -19,11 +19,13 @@ class MarketplaceSearch
     /** An attribute's value as text: numbers lose trailing zeros (20.0000 -> "20"). */
     private const ATTR_VALUE_SQL = 'COALESCE(pa.value_text, trim_scale(pa.value_number)::text)';
 
-    /** Public listing filter shared by every customer-facing query. @return Builder<TenantListing> */
+    /** Public listing filter shared by every customer-facing query: only moderated (approved) catalog products are ever sold. @return Builder<TenantListing> */
     public static function liveListings(): Builder
     {
         return TenantListing::query()->withoutGlobalScopes()
             ->where('tenant_listings.publication_status', 'published')->where('tenant_listings.visibility', 'public')->whereNull('tenant_listings.deleted_at')
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('product_variants as lv')->join('products as lp', 'lp.id', '=', 'lv.product_id')->whereColumn('lv.id', 'tenant_listings.variant_id')
+                ->where('lv.status', 'approved')->whereNull('lv.deleted_at')->where('lp.status', 'approved')->whereNull('lp.deleted_at'))
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('stores')->whereColumn('stores.id', 'tenant_listings.store_id')->where('stores.is_active', true)->whereNull('stores.deleted_at'))
             ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('tenants')->whereColumn('tenants.id', 'tenant_listings.tenant_id')->where('tenants.status', 'active')->whereNull('tenants.deleted_at'));
     }
@@ -44,7 +46,7 @@ class MarketplaceSearch
         $price = 'COALESCE(l.sale_price_cents, l.price_cents)';
 
         $live = fn ($q) => $q->from('tenant_listings as l')->join('product_variants as v', 'v.id', '=', 'l.variant_id')
-            ->whereColumn('v.product_id', 'products.id')->where('l.publication_status', 'published')->where('l.visibility', 'public')->whereNull('l.deleted_at')
+            ->whereColumn('v.product_id', 'products.id')->where('v.status', 'approved')->whereNull('v.deleted_at')->where('l.publication_status', 'published')->where('l.visibility', 'public')->whereNull('l.deleted_at')
             ->whereExists(fn ($s) => $s->select(DB::raw(1))->from('stores as s')->whereColumn('s.id', 'l.store_id')->where('s.is_active', true)->whereNull('s.deleted_at'))
             ->whereExists(fn ($t) => $t->select(DB::raw(1))->from('tenants as t')->whereColumn('t.id', 'l.tenant_id')->where('t.status', 'active')->whereNull('t.deleted_at'));
 

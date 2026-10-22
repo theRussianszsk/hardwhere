@@ -128,7 +128,6 @@ class AiIntakeService
     /** Variants with at least one live public listing. @return Builder<ProductVariant> */
     public function publiclyListed(): Builder
     {
-        return ProductVariant::query()->whereIn('product_variants.id', DB::table('tenant_listings')->where('publication_status', 'published')
-            ->where('visibility', 'public')->whereNull('deleted_at')->select('variant_id'));
+        return ProductVariant::query()->whereIn('product_variants.id', MarketplaceSearch::liveListings()->select('tenant_listings.variant_id'));
     }
 }

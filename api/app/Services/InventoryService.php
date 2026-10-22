@@ -142,6 +142,9 @@ class InventoryService
             $publish = $d['publish'] ?? null;
             unset($d['publish']);
             $listing->fill($d);
+            if ($publish && ($listing->variant->status !== 'approved' || $listing->product->status !== 'approved')) {
+                throw ApiException::conflict('product_not_approved', 'This product is waiting for catalog review. You can publish it once it is approved.');
+            }
             if ($publish !== null) {
                 $listing->visibility = $publish ? 'public' : 'hidden';
                 $listing->publication_status = $publish ? 'published' : 'unpublished';
