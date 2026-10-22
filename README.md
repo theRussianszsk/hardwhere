@@ -106,6 +106,7 @@ Without Docker: copy `api/.env.example` to `api/.env`, point `DB_*` at your Post
 |---|---|
 | `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSLMODE` (or `DB_URL`) | PostgreSQL / Neon |
 | `VENDOR_TOKEN_TTL_MINUTES` (1440), `CUSTOMER_TOKEN_TTL_MINUTES` (43200) | Sanctum token lifetime |
+| `PICKUP_HOLD_MINUTES` (1440) | how long a confirmed / ready-for-pickup order keeps its stock held, counted from that transition |
 | `AI_PROVIDER` (`mock` \| `gemma` \| `openai`), `AI_MAX_IMAGE_KB` | AI provider selection |
 | `GEMMA_API_KEY`, `GEMMA_MODEL`, `GEMMA_BASE_URL`, `GEMMA_TIMEOUT` | Gemma 4 via the Gemini API |
 | `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY`, `AI_OPENAI_MODEL`, `AI_OPENAI_TIMEOUT`, `AI_OPENAI_JSON_MODE` | any OpenAI-compatible vision endpoint (OpenRouter, vLLM, Ollama) |
