@@ -6,6 +6,7 @@ import {
 } from "@hardwhere/shared";
 import { Btn, Card, ConfirmDialog, EmptyState, ErrorState, LoadingState, Money, Notice, StatusPill } from "../components/ui";
 import { useOnline } from "../hooks";
+import { attemptFailed } from "./Checkout";
 import { formatHours } from "./Product";
 
 const placedDesc = (a: OrderDto, b: OrderDto) => Date.parse(b.placed_at) - Date.parse(a.placed_at) || b.id - a.id;
@@ -43,7 +44,8 @@ export function OrdersScreen() {
   if (auth.status === "restoring") return null;
   if (!signedIn) return <EmptyState title="Sign in to see your orders" action={<Btn onClick={() => nav("/login?next=/orders")}>Sign in or create account</Btn>}>Orders you place are tracked here.</EmptyState>;
 
-  const pending = attempts.filter((a) => a.state !== "confirmed");
+  const failed = attempts.filter(attemptFailed);
+  const pending = attempts.filter((a) => a.state !== "confirmed" && !attemptFailed(a));
   const live = online && pg;
   const list = live ? pg!.items : [...cached.rows].sort(placedDesc);
   const loading = online ? busy && !pg : cached.loading;
@@ -51,13 +53,25 @@ export function OrdersScreen() {
   return (
     <div className="space-y-3 p-3">
       <h1 className="text-lg font-bold">My orders</h1>
+      {failed.length > 0 && (
+        <section aria-label="Orders that were not placed" className="space-y-2">
+          <h2 className="text-sm font-semibold text-ink">Not placed</h2>
+          {failed.map((a) => (
+            <Link key={a.id} to={`/attempt/${a.id}`} className="flex items-center justify-between gap-2 rounded-card border border-danger bg-danger-soft p-3">
+              <span className="min-w-0 truncate text-sm">{a.label}</span>
+              <StatusPill status="rejected" label="Not reserved" />
+            </Link>
+          ))}
+          <p className="text-xs text-ink-muted">Nothing was reserved for these. Open one to see why and order again.</p>
+        </section>
+      )}
       {pending.length > 0 && (
         <section aria-label="Orders waiting for confirmation" className="space-y-2">
           <h2 className="text-sm font-semibold text-ink">Waiting for confirmation</h2>
           {pending.map((a) => (
             <Link key={a.id} to={`/attempt/${a.id}`} className="flex items-center justify-between gap-2 rounded-card border border-warn bg-warn-soft p-3">
               <span className="min-w-0 truncate text-sm">{a.label}</span>
-              <StatusPill status={a.state === "rejected" || (a.state === "needs_review" && a.lastError && ["stock_unavailable", "price_changed", "listing_unavailable"].includes(a.lastError.code)) ? "rejected" : a.state} label={a.state === "sending" || a.state === "queued" || a.state === "draft" ? "Submitted" : undefined} />
+              <StatusPill status={a.state} label={a.state === "sending" || a.state === "queued" || a.state === "draft" ? "Submitted" : undefined} />
             </Link>
           ))}
           <p className="text-xs text-ink-muted">These are not reservations until the store confirms them.</p>
