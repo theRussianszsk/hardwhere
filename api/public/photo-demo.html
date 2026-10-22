@@ -63,7 +63,7 @@
       <label>Image (jpg, png, webp)
         <input id="file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
       </label>
-      <button id="analyze" disabled>Analyze photo</button>
+      <button id="analyze" class="secondary" disabled>Analyze again</button>
     </div>
     <img id="preview" class="preview hidden" alt="Selected photo preview">
   </section>
@@ -120,10 +120,10 @@ function renderAuth() {
   $('analyze').disabled = !(t && $('file').files[0]);
 }
 
-$('tab-vendor').onclick = () => setMode('vendor');
-$('tab-customer').onclick = () => setMode('customer');
+$('tab-vendor').onclick = () => { setMode('vendor'); if (!state.token.vendor) signIn(); };
+$('tab-customer').onclick = () => { setMode('customer'); if (!state.token.customer) signIn(); };
 
-$('login').onclick = async () => {
+async function signIn() {
   const btn = $('login'); btn.disabled = true;
   try {
     const body = await api('/auth/login', { method: 'POST', anon: true, headers: { 'Content-Type': 'application/json' },
@@ -133,16 +133,21 @@ $('login').onclick = async () => {
     if (state.mode === 'vendor') state.stores = (await api('/vendor/stores')).data || [];
   } catch (e) { $('auth-msg').textContent = e.message; }
   btn.disabled = false; renderAuth();
-};
+}
+$('login').onclick = signIn;
 
-$('file').onchange = () => {
+$('file').onchange = async () => {
   const f = $('file').files[0];
   const img = $('preview');
   if (f) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); } else img.classList.add('hidden');
   renderAuth();
+  // Picking a photo is enough: sign in with the demo account if needed, then recognize it.
+  if (f) { if (!state.token[state.mode]) await signIn(); if (state.token[state.mode]) analyzePhoto(); }
 };
 
-$('analyze').onclick = async () => {
+$('analyze').onclick = () => analyzePhoto();
+
+async function analyzePhoto() {
   const f = $('file').files[0]; if (!f) return;
   const out = $('result'); out.classList.remove('hidden');
   $('listings').classList.add('hidden');
@@ -159,7 +164,7 @@ $('analyze').onclick = async () => {
     if (e.status === 401) { state.token[state.mode] = null; renderAuth(); }
   }
   renderAuth();
-};
+}
 
 function renderResult(a, notice) {
   const x = a.extracted || {};
@@ -253,6 +258,7 @@ async function showListings(productId, name) {
 }
 
 setMode('vendor');
+signIn();
 </script>
 </body>
 </html>
