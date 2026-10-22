@@ -1,7 +1,11 @@
 <?php
 
 use App\Models\AiAnalysis;
+use App\Models\Category;
+use App\Services\AiIntakeService;
+use App\Services\CatalogService;
 use App\Services\InventoryService;
+use App\Services\SyncProjector;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\World;
@@ -64,6 +68,39 @@ it('hides anything that is not published and public', function () {
     expect($count())->toBe(1);
     $this->la->delete();                                                                      // soft deleted
     expect($count())->toBe(0);
+});
+
+it('keeps unmoderated candidate products off the marketplace until a platform admin approves them', function () {
+    $cand = app(CatalogService::class)->createProduct(['category_id' => Category::where('slug', 'hand-tools')->value('id'), 'name' => 'Unreviewed Mystery Mallet', 'brand' => 'Nobrand'], $this->a['tenant']->id);
+    $l = World::stocked($this->a, $cand->variants[0]->id, 5, 20000, publish: false)['listing'];
+    $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $this->patchJson("/api/v1/vendor/listings/{$l->id}", ['publish' => true, 'expected_row_version' => $l->row_version], $h)->assertStatus(409)->assertJsonPath('error.code', 'product_not_approved');
+    expect($l->fresh()->publication_status)->toBe('draft');
+
+    $l->update(['publication_status' => 'published', 'visibility' => 'public']);              // published before publishing was gated
+    $this->getJson("/api/v1/public/listings/{$l->id}")->assertNotFound();
+    expect(collect($this->getJson('/api/v1/public/stores/'.$this->a['store']->id.'/listings')->json('data'))->pluck('id'))->not->toContain($l->id)
+        ->and(json_encode($this->getJson('/api/v1/public/search?q=mallet')->json()))->not->toContain('Mystery')
+        ->and(app(SyncProjector::class)->project('public', 'listing', $l->id, null, null))->toBeNull()
+        ->and(app(AiIntakeService::class)->publiclyListed()->pluck('id'))->not->toContain($l->variant_id);
+    World::customer('cust@test.test');
+    $c = World::login($this, 'cust@test.test', 'customer');
+    $this->putJson('/api/v1/customer/cart', ['items' => [['listing_id' => $l->id, 'quantity' => 1]]], $c)->assertOk()->assertJsonCount(0, 'data.items');
+    $this->postJson('/api/v1/customer/orders', ['items' => [['listing_id' => $l->id, 'quantity' => 1]], 'fulfillment_type' => 'pickup', 'contact_name' => 'C', 'contact_phone' => '09171234567'], $c + idem())
+        ->assertStatus(409)->assertJsonPath('error.code', 'listing_unavailable');
+
+    app(CatalogService::class)->approve($cand);
+    expect(DB::table('sync_changes')->where('audience', 'public')->where('entity', 'listing')->where('entity_id', $l->id)->exists())->toBeTrue(); // public caches learn it now exists
+    $this->getJson("/api/v1/public/listings/{$l->id}")->assertOk()->assertJsonPath('data.id', $l->id);
+    expect(app(AiIntakeService::class)->publiclyListed()->pluck('id'))->toContain($l->variant_id);
+});
+
+it('offers photo-search candidates only from live stores of active businesses', function () {
+    $listed = fn () => app(AiIntakeService::class)->publiclyListed()->pluck('id');
+    expect($listed())->toContain($this->la->variant_id);
+    $this->a['tenant']->update(['status' => 'suspended']);
+    $this->b['store']->update(['is_active' => false]);
+    expect($listed())->not->toContain($this->la->variant_id);
 });
 
 it('searches by text, brand, model, sku, barcode, synonym, and category', function () {
