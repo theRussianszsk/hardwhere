@@ -13,6 +13,8 @@ export function useOutboxItem<R = unknown, P = unknown>(id: string | null | unde
   const [s, setS] = useState<{ item: OutboxItem<P, R> | null; loading: boolean }>({ item: null, loading: true });
   useEffect(() => {
     if (!active || !id) { setS({ item: null, loading: false }); return; }
+    // A new id must not briefly report the previous id's row (or "not found") as its own.
+    setS((p) => (p.item?.id === id ? p : { item: null, loading: true }));
     let alive = true;
     const load = async () => { const item = await active.store.outbox.get<P, R>(id); if (alive) setS({ item, loading: false }); };
     void load();
