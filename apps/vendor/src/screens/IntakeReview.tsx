@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-  ApiError, humanizeError, newId, useActive, useAuth, useOnlineQuery, useServices,
+  ApiError, humanizeError, newId, useActive, useAuth, useNow, useOnlineQuery, useServices,
   type AiAnalysisDto, type AiAnalyzePayload, type ConfirmIntakeInput, type ExtractedProduct, type MatchCandidateDto,
 } from "@hardwhere/shared";
 import { PhotoThumb } from "@hardwhere/shared/ui";
@@ -38,6 +38,7 @@ export function IntakeReview() {
   const { online } = useOnline();
   const [done, setDone] = useState<Done | null>(null);
   const [busy, setBusy] = useState(false);
+  const now = useNow(1000);
   const photo = useStoredPhoto(item?.payload?.photoRef);
 
   if (done) return <DoneView done={done} />;
@@ -50,8 +51,8 @@ export function IntakeReview() {
       <Screen title="Analysing photo" back="/add">
         {photo && <PhotoThumb source={photo} alt="Your product photo" size={120} />}
         <div aria-live="polite" className="space-y-3">
-          {item.state === "sending" && <LoadingState label="The AI is looking at your photo…" />}
-          {item.state === "queued" && (online ? <LoadingState label="Uploading your photo…" /> : (
+          {item.state === "sending" && <LoadingState label={`The AI is reading your photo… ${Math.max(0, Math.round((now - new Date(item.updatedAt).getTime()) / 1000))}s (usually 3–10 s)`} />}
+          {item.state === "queued" && (online ? <LoadingState label={item.attempts > 0 ? `Retrying (attempt ${item.attempts + 1})${item.nextAttemptAt ? ` in ${Math.max(0, Math.ceil((new Date(item.nextAttemptAt).getTime() - now) / 1000))}s` : ""}… tap Try again to send now` : "Sending your photo…"} /> : (
             <Alert tone="warn" live="assertive"><strong>Saved — it will be analysed when you're back online.</strong> You can leave this screen; the photo stays queued on this phone. Or enter the item yourself now.</Alert>
           ))}
           {(item.state === "needs_review" || item.state === "rejected") && (

@@ -11,6 +11,9 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "card", label: "Card" }, { value: "bank_transfer", label: "Bank transfer" }, { value: "other", label: "Other" },
 ];
 const looksLikeCardNumber = (s: string) => /^\d{13,19}$/.test(s.replace(/[\s-]/g, ""));
+/** Likely cash handed over: the total rounded up to the next ₱100, ₱500 and ₱1,000 (e.g. ₱1,450 -> ₱1,500, ₱2,000). */
+const quickTenders = (total: number) =>
+  [...new Set([10_000, 50_000, 100_000].map((step) => Math.ceil(total / step) * step))].filter((c) => c > total);
 
 export function Checkout() {
   const cartApi = useCart();
@@ -93,7 +96,7 @@ export function Checkout() {
           <PesoInput label="Cash received" cents={tendered} onChange={setTendered} error={tenderError} />
           <div className="flex flex-wrap gap-2" role="group" aria-label="Quick amounts">
             <Btn variant="secondary" onClick={() => setTendered(totals.total)}>Exact</Btn>
-            {[100, 200, 500, 1000].filter((n) => n * 100 >= totals.total).slice(0, 3).map((n) => <Btn key={n} variant="secondary" onClick={() => setTendered(n * 100)}>₱{n}</Btn>)}
+            {quickTenders(totals.total).map((c) => <Btn key={c} variant="secondary" onClick={() => setTendered(c)}>{formatPeso(c)}</Btn>)}
           </div>
           <p className="text-lg font-bold text-emerald-800" aria-live="polite">Change: {change !== null && change >= 0 ? formatPeso(change) : "—"}</p>
         </div>

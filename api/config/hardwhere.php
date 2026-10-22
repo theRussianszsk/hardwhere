@@ -23,9 +23,11 @@ return [
             'model' => env('AI_OPENAI_MODEL'),
             'timeout' => (int) env('AI_OPENAI_TIMEOUT', 45),
             'json_mode' => (bool) env('AI_OPENAI_JSON_MODE', false),
+            'max_tokens' => (int) env('AI_OPENAI_MAX_TOKENS', 400), // the JSON reply needs ~250 tokens; a cap keeps latency low
         ],
         'max_image_kb' => (int) env('AI_MAX_IMAGE_KB', 8192),
         'max_image_edge' => 1600,
+        'model_image_edge' => (int) env('AI_MODEL_IMAGE_EDGE', 1024), // the stored photo stays at 1600px; the model gets a smaller, faster copy
         'uploads_disk' => env('AI_UPLOADS_DISK', 'local'),
     ],
 

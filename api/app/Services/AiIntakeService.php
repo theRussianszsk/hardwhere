@@ -48,7 +48,7 @@ class AiIntakeService
         // The slow provider call happens outside the DB transaction; the idempotent persist below makes retries replay one analysis.
         $started = microtime(true);
         try {
-            $result = $this->vision->analyze($clean['bytes'], $clean['mime'], ['hint' => $hint, 'filename' => $file->getClientOriginalName(), 'vocabulary' => $this->vocabulary->forPrompt()]);
+            $result = $this->vision->analyze($this->images->forModel($clean['bytes']), $clean['mime'], ['hint' => $hint, 'filename' => $file->getClientOriginalName(), 'vocabulary' => $this->vocabulary->forPrompt()]);
         } catch (AiProviderException $e) {
             throw new ApiException('ai_unavailable', 'Photo analysis is unavailable right now. You can enter the product manually.', 503, ['reason' => $e->getMessage()]);
         }

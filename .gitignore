@@ -14,3 +14,8 @@ apps/*/ios/App/Pods/
 apps/*/ios/App/App/public/
 apps/*/ios/App/build/
 apps/*/ios/DerivedData/
+
+# Local secrets: never commit
+.env
+.env.*
+!.env.example

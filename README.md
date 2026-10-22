@@ -106,7 +106,9 @@ Without Docker: copy `api/.env.example` to `api/.env`, point `DB_*` at your Post
 |---|---|
 | `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSLMODE` (or `DB_URL`) | PostgreSQL / Neon |
 | `VENDOR_TOKEN_TTL_MINUTES` (1440), `CUSTOMER_TOKEN_TTL_MINUTES` (43200) | Sanctum token lifetime |
-| `AI_PROVIDER` (`mock` \| `gemma`), `GEMMA_API_KEY`, `GEMMA_MODEL`, `GEMMA_BASE_URL`, `GEMMA_TIMEOUT`, `AI_MAX_IMAGE_KB` | AI provider |
+| `AI_PROVIDER` (`mock` \| `gemma` \| `openai`), `AI_MAX_IMAGE_KB` | AI provider selection |
+| `GEMMA_API_KEY`, `GEMMA_MODEL`, `GEMMA_BASE_URL`, `GEMMA_TIMEOUT` | Gemma 4 via the Gemini API |
+| `AI_OPENAI_BASE_URL`, `AI_OPENAI_API_KEY`, `AI_OPENAI_MODEL`, `AI_OPENAI_TIMEOUT`, `AI_OPENAI_JSON_MODE` | any OpenAI-compatible vision endpoint (OpenRouter, vLLM, Ollama) |
 | `CORS_ALLOWED_ORIGINS` | extra origins (Capacitor `capacitor://localhost`, `https://localhost`, `http://localhost` and Vite dev origins are built in) |
 | `TRUSTED_PROXIES` | set behind a load balancer so throttling sees the client IP |
 | `SYNC_XMIN_HORIZON` | keep `true`; `false` only inside wrapped test transactions |
@@ -122,18 +124,29 @@ Without Docker: copy `api/.env.example` to `api/.env`, point `DB_*` at your Post
 
 Rollback: `php artisan migrate:rollback`. Local schema migrations of the phone's SQLite are independent and versioned in `packages/shared/src/db/migrations.ts`.
 
-## Gemma 4 configuration
+## AI configuration (Gemma 4)
 
+Three providers sit behind one `VisionProvider` interface; pick one with `AI_PROVIDER` and **restart the API** (`docker compose restart api`) after editing `api/.env`.
+
+**1. `mock` (default) — demo only, never looks at pixels.** The scenario comes from an explicit `hint` (the apps' *Demo photos* chooser), else a keyword in the uploaded
+file name (`makita-drill.jpg`), else the mock returns *insufficient confidence* with an explanation instead of guessing. Every result is labelled **Demo AI**.
+
+**2. `openai` — Gemma 4 through any OpenAI-compatible endpoint (OpenRouter, vLLM, local Ollama).**
 ```
-AI_PROVIDER=gemma
-GEMMA_API_KEY=<Google AI Studio / Gemini API key>   # server-side only
-GEMMA_MODEL=gemma-4-26b-a4b-it                      # or gemma-4-31b-it
+AI_PROVIDER=openai
+AI_OPENAI_BASE_URL=https://openrouter.ai/api/v1
+AI_OPENAI_API_KEY=<your OpenRouter key>          # server-side only, api/.env is gitignored
+AI_OPENAI_MODEL=google/gemma-4-26b-a4b-it:free   # or google/gemma-4-26b-a4b-it, google/gemma-4-31b-it (image input confirmed in OpenRouter's model list)
+AI_OPENAI_JSON_MODE=false                        # true adds response_format=json_object where the backend supports it
 ```
-The provider sends `POST {base}/models/{model}:generateContent` with the image as `inline_data` plus an instruction to return one JSON object,
-then validates the reply (clamped confidences, whitelisted attribute keys, bounded lengths). Google's Gemma page documents Files-API image input
-and does not document JSON mode, so the request contract is **tested with HTTP fakes only**. To check it live: set the three variables, upload a
-photo to `POST /api/v1/vendor/ai/analyses` (multipart `image`, header `Idempotency-Key`) and confirm `is_mock=false` and `provider=gemma` in the response.
-If the provider fails the API answers `503 ai_unavailable` and the apps offer manual entry; inference is never faked offline.
+Sends `POST {base}/chat/completions` with a text part and an `image_url` data URI. Local Ollama: `AI_OPENAI_BASE_URL=http://localhost:11434/v1`, no key needed.
+(The request shape was first prototyped by Mark Heramis on branch `feature/image-recognition`.)
+
+**3. `gemma` — Gemma 4 through the Gemini API** (`GEMMA_API_KEY`, `GEMMA_MODEL=gemma-4-26b-a4b-it` or `gemma-4-31b-it`): `POST {base}/models/{model}:generateContent` with `inline_data`.
+
+In every live mode the model's reply is validated strictly (clamped confidences, whitelisted attribute keys, bounded lengths) and fed to the same catalog matcher; a failure answers `503 ai_unavailable`
+and the apps offer manual entry (inference is never faked offline). **The request contracts are covered by HTTP-fake tests; no live endpoint has been exercised in this repository** — to verify live,
+set the variables, upload a photo to `POST /api/v1/vendor/ai/analyses` (multipart `image`, header `Idempotency-Key`) and confirm `is_mock=false` in the response.
 
 ## API contract (server ↔ TypeScript)
 
@@ -144,10 +157,10 @@ checks it against the Laravel router **in both directions** (new routes must be 
 ## Tests
 
 ```bash
-scripts/dphp php artisan test                 # API: 241 tests on a real PostgreSQL database (hardwhere_test)
+scripts/dphp php artisan test                 # API: 247 tests on a real PostgreSQL database (hardwhere_test)
 scripts/dphp vendor/bin/pint --test           # style
 scripts/dphp vendor/bin/phpstan analyse       # level 5 + baseline
-npm test                                      # shared TS: SQLite migrations, partitioning, sync, outbox, session (159 tests)
+npm test                                      # shared TS: SQLite migrations, partitioning, sync, outbox, session (185 tests)
 npm run typecheck && npm run build            # strict TS for shared + both apps, static Vite builds (dist/index.html)
 ```
 PHP coverage includes: tenant isolation (API, Eloquent scope, composite FKs), role matrix, token lifecycle, stock ledger integrity (append-only trigger, CHECKs), POS checkout, marketplace orders and reservations (state machine, expiry), listing visibility, price isolation, AI extraction validation and the Gemma request contract, matcher (barcode/SKU/variants/duplicates), upload hardening, sync (snapshot, deltas, tombstones, revoked visibility), seed integrity, error envelope, and **real parallel-process concurrency** (`tests/Concurrency`: N PHP processes race for the same stock on committed data; plus an xmin-horizon test with two live connections).
@@ -176,9 +189,10 @@ Camera/photos (both apps) and coarse location (customer) permission strings are 
 ## Known limitations & hackathon trade-offs
 
 * No native build/device verification (see above). Browser storage is unencrypted dev storage.
-* Gemma 4 not exercised live. Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
+* Gemma 4 not exercised live (the `openai` and `gemma` providers are tested against HTTP fakes only). Image *similarity* uses AI-extracted attributes only; there is no vector index (`products.embedding_ref` is reserved).
 * Offline *sales* are out of scope by design: stock cannot be kept consistent across disconnected devices without allocation/leasing.
 * Customer photo search requires a signed-in customer (AI cost control); text search is anonymous.
+* Browser dev note: the browser SQLite (jeep-sqlite) hydrates via `requestAnimationFrame`, so a tab opened in the *background* shows "Opening your store…" until it is shown. Use one focused tab; the web token lives in `sessionStorage`, so a new tab needs a fresh sign-in.
 * Trimmed UI scope for the demo: store/staff/supplier/sales-history/purchase-receipt screens are not built (their API endpoints exist and are tested).
 * `sync_changes` is append-only and not pruned; cursors are cluster-local (`xid8`) — restoring to a new cluster needs a cursor epoch.
 * Payment is recorded, not processed: no card data is ever accepted (card-number-shaped references are rejected).
