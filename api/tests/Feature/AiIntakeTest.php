@@ -262,6 +262,22 @@ describe('OpenAI-compatible provider', function () {
         expect(json_encode($r->json()))->not->toContain('or-test-key');
     });
 
+    it('sends the catalog vocabulary from the database, so the reply is matched against catalog fields', function () {
+        // a photo of a 2-pole 30A Royu breaker; the model answers in the catalog's own words because the prompt listed them
+        Http::fake(['openrouter.ai/*' => ($this->chat)(json_encode(['name' => 'Circuit breaker 2-pole', 'brand' => 'Royu', 'model' => null, 'category' => 'Electrical Supplies',
+            'attributes' => ['amperage_a' => 30], 'confidence' => ['name' => 0.9, 'brand' => 0.9, 'category' => 0.9, 'attributes' => 0.9], 'overall_confidence' => 0.88]))]);
+        $r = ($this->analyze)(null)->assertCreated();
+
+        Http::assertSent(function ($req) {
+            $prompt = $req['messages'][0]['content'][0]['text'];
+
+            return str_contains($prompt, 'Electrical Supplies') && str_contains($prompt, 'amperage_a (A)') && str_contains($prompt, 'voltage_v (V) number');
+        });
+        $top = $r->json('data.candidates.0');
+        expect($top['variant']['name'])->toBe('Royu circuit breaker 2-pole 30A')->and($top['matched_fields'])->toContain('brand', 'category', 'attr:amperage_a')
+            ->and(collect($r->json('data.candidates'))->firstWhere('variant.name', 'Royu circuit breaker 2-pole 20A')['warnings'] ?? [])->toContain('Similar product with different current rating');
+    });
+
     it('can request JSON mode, works without a key for local servers, and reads array-style content', function () {
         config(['hardwhere.ai.openai.json_mode' => true, 'hardwhere.ai.openai.api_key' => null, 'hardwhere.ai.openai.base_url' => 'http://localhost:11434/v1']);
         Http::fake(['localhost:11434/*' => Http::response(['choices' => [['message' => ['content' => [['type' => 'text', 'text' => $this->json]]]]]])]);

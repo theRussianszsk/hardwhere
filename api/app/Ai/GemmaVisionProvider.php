@@ -24,6 +24,12 @@ You identify hardware-store products (Philippines) from one photo. Reply with ON
 Use null for anything you cannot read or see. Never guess a brand or model number; lower the confidence instead.
 TXT;
 
+    /** @param  array{vocabulary?: array{categories?: list<string>, attributes?: list<string>}|null}  $context */
+    public static function prompt(array $context = []): string
+    {
+        return self::PROMPT.CatalogVocabulary::promptSection($context['vocabulary'] ?? null);
+    }
+
     public function analyze(string $imageBytes, string $mime, array $context = []): AnalysisResult
     {
         $cfg = config('hardwhere.ai.gemma');
@@ -34,7 +40,7 @@ TXT;
                 ->post(rtrim($cfg['base_url'], '/')."/models/{$cfg['model']}:generateContent", [
                     'contents' => [['role' => 'user', 'parts' => [
                         ['inline_data' => ['mime_type' => $mime, 'data' => base64_encode($imageBytes)]],
-                        ['text' => self::PROMPT],
+                        ['text' => self::prompt($context)],
                     ]]],
                     'generationConfig' => ['temperature' => 0.1],
                 ]);

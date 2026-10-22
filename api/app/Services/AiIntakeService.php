@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Ai\AiProviderException;
+use App\Ai\CatalogVocabulary;
 use App\Ai\VisionProvider;
 use App\Models\AiAnalysis;
 use App\Models\AiDecision;
@@ -26,6 +27,7 @@ class AiIntakeService
         private InventoryService $inventory,
         private Idempotency $idempotency,
         private AuditLogger $audit,
+        private CatalogVocabulary $vocabulary,
     ) {}
 
     /**
@@ -46,7 +48,7 @@ class AiIntakeService
         // The slow provider call happens outside the DB transaction; the idempotent persist below makes retries replay one analysis.
         $started = microtime(true);
         try {
-            $result = $this->vision->analyze($clean['bytes'], $clean['mime'], ['hint' => $hint, 'filename' => $file->getClientOriginalName()]);
+            $result = $this->vision->analyze($clean['bytes'], $clean['mime'], ['hint' => $hint, 'filename' => $file->getClientOriginalName(), 'vocabulary' => $this->vocabulary->forPrompt()]);
         } catch (AiProviderException $e) {
             throw new ApiException('ai_unavailable', 'Photo analysis is unavailable right now. You can enter the product manually.', 503, ['reason' => $e->getMessage()]);
         }

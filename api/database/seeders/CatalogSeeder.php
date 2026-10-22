@@ -2,11 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Ai\CatalogVocabulary;
 use App\Models\AttributeDefinition;
 use App\Models\Category;
 use App\Models\ProductImage;
 use App\Services\CatalogService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Cache;
 
 /** Shared canonical catalog. Deterministic: fixed barcodes, fixed variant structure. */
 class CatalogSeeder extends Seeder
@@ -143,5 +145,6 @@ class CatalogSeeder extends Seeder
                 self::$refs[$v[0]] = $product->variants[$idx]->id;
             }
         }
+        Cache::forget(CatalogVocabulary::CACHE_KEY); // live AI prompts must use the categories and attributes just seeded
     }
 }

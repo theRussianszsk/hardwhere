@@ -26,7 +26,7 @@ class OpenAiCompatibleVisionProvider implements VisionProvider
             'model' => $cfg['model'],
             'temperature' => 0.1,
             'messages' => [['role' => 'user', 'content' => [
-                ['type' => 'text', 'text' => GemmaVisionProvider::PROMPT],
+                ['type' => 'text', 'text' => GemmaVisionProvider::prompt($context)],
                 ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$mime.';base64,'.base64_encode($imageBytes)]],
             ]]],
         ] + ($cfg['json_mode'] ? ['response_format' => ['type' => 'json_object']] : []);

@@ -128,3 +128,15 @@ it('keeps canonical products with materially different attributes as distinct va
     expect($p->variants)->toHaveCount(2)->and($p->variants->pluck('variant_key')->unique())->toHaveCount(2);
     expect(fn () => app(CatalogService::class)->createVariant($p, ['name' => 'dup', 'attributes' => ['wattage_w' => 9, 'color' => 'daylight']]))->toThrow(UniqueConstraintViolationException::class);
 });
+
+it('treats a missing catalog model number as unknown, not as a mismatch', function () {
+    // Royu breakers have no model number in the catalog; a model code read from the photo must not count against them
+    $r = $this->m->match(extraction(['brand' => 'Royu', 'name' => 'Circuit breaker 2-pole', 'model' => 'RB-230', 'category' => 'Electrical Supplies', 'attrs' => ['amperage_a' => 30]]));
+    $c = ($this->find)($r, 'BRK30');
+    expect($c)->not->toBeNull()->and($c['mismatched_fields'])->not->toContain('model')->and($c['matched_fields'])->toContain('brand', 'category', 'attr:amperage_a');
+});
+
+it('accepts a catalog category path such as "Electrical Supplies > Breakers"', function () {
+    $r = $this->m->match(extraction(['brand' => 'Royu', 'name' => 'Circuit breaker 2-pole', 'category' => 'Electrical Supplies > Breakers', 'attrs' => ['amperage_a' => 20]]));
+    expect(($this->find)($r, 'BRK20')['matched_fields'])->toContain('category');
+});

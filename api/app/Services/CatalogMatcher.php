@@ -149,7 +149,7 @@ class CatalogMatcher
         if (strlen($modelKey) >= 3) {
             // A variant's own model/part number wins; the family-level model only applies to variants that have none.
             $keys = array_filter([Text::key($v->model_number), Text::key($v->part_number)]) ?: array_filter([Text::key($p->model_number)]);
-            $model = 0.0;
+            $model = $keys ? 0.0 : null; // the catalog has no model number to compare against: unknown, not a mismatch
             foreach ($keys as $k) {
                 if ($k === $modelKey) {
                     $model = 1.0;
@@ -166,9 +166,11 @@ class CatalogMatcher
 
         $category = null;
         if ($x->category) {
-            $hint = Text::key($x->category);
+            // Live models copy a catalog path such as "Electrical Supplies > Breakers & Panel Boards"; any level that names this product's category counts.
+            $hints = array_map(Text::key(...), explode('>', $x->category));
             $cat = $p->category;
-            $category = in_array($hint, [Text::key($cat->name), Text::key($cat->slug)], true) || ($cat->parent && Text::key($cat->parent->name) === $hint) ? 1.0 : 0.25;
+            $names = array_filter([Text::key($cat->name), Text::key($cat->slug), $cat->parent ? Text::key($cat->parent->name) : null]);
+            $category = array_intersect($hints, $names) ? 1.0 : 0.25;
             $category === 1.0 ? $matched[] = 'category' : $mismatched[] = 'category';
         }
 
