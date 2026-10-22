@@ -3,6 +3,7 @@
 use App\Ai\AiProviderException;
 use App\Ai\GemmaVisionProvider;
 use App\Ai\MockVisionProvider;
+use App\Ai\OpenAiCompatibleVisionProvider;
 use App\Ai\ProductExtraction;
 use App\Ai\VisionProvider;
 use App\Enums\TenantRole;
@@ -220,4 +221,63 @@ it('is deterministic: the mock gives the same answer for the same image and ever
         $res = $m->analyze('x', 'image/jpeg', ['hint' => $key]);
         expect($res->isMock)->toBeTrue()->and($res->provider)->toBe('mock')->and(implode(' ', $res->extraction->notes))->toContain('Demo AI');
     }
+});
+
+describe('demo mock behaviour', function () {
+    it('does not guess: an unknown photo is "insufficient confidence" with an explanation, never a confident wrong match', function () {
+        $r = $this->post('/api/v1/vendor/ai/analyses', ['image' => UploadedFile::fake()->image('IMG_4821.jpg', 400, 400)], $this->h + idem() + ['Accept' => 'application/json'])->assertCreated();
+        expect($r->json('data.is_mock'))->toBeTrue()->and($r->json('data.classification'))->toBe('insufficient_confidence')->and($r->json('data.candidates'))->toBe([])
+            ->and($r->json('data.extracted.name'))->toBeNull()->and(implode(' ', $r->json('data.extracted.notes')))->toContain('built-in demo photos');
+    });
+
+    it('picks the demo scenario from a keyword in the file name, and an explicit hint wins over the name', function () {
+        $byName = $this->post('/api/v1/vendor/ai/analyses', ['image' => UploadedFile::fake()->image('my-makita-drill.jpg', 400, 400)], $this->h + idem() + ['Accept' => 'application/json'])->assertCreated();
+        expect($byName->json('data.extracted.model'))->toBe('HP1630');
+        $hint = $this->post('/api/v1/vendor/ai/analyses', ['image' => UploadedFile::fake()->image('makita.jpg', 400, 400), 'hint' => 'barcode-visible'], $this->h + idem() + ['Accept' => 'application/json'])->assertCreated();
+        expect($hint->json('data.extracted.brand'))->toBe('Stanley');
+    });
+});
+
+describe('OpenAI-compatible provider', function () {
+    beforeEach(function () {
+        config(['hardwhere.ai.provider' => 'openai', 'hardwhere.ai.openai.base_url' => 'https://openrouter.ai/api/v1', 'hardwhere.ai.openai.api_key' => 'or-test-key',
+            'hardwhere.ai.openai.model' => 'google/gemma-4-26b-a4b-it:free', 'hardwhere.ai.openai.json_mode' => false]);
+        $this->chat = fn (string $text) => Http::response(['choices' => [['message' => ['role' => 'assistant', 'content' => $text]]]]);
+        $this->json = json_encode(['name' => 'Hammer Drill', 'brand' => 'Makita', 'model' => 'HP1630', 'category' => 'Power Tools', 'attributes' => ['voltage_v' => 220], 'confidence' => ['brand' => 0.95, 'model' => 0.9], 'overall_confidence' => 0.92]);
+    });
+
+    it('sends an OpenAI chat-completions request with the image as a data URI and validates the reply', function () {
+        Http::fake(['openrouter.ai/*' => ($this->chat)("```json\n{$this->json}\n```")]);
+        expect(app(VisionProvider::class))->toBeInstanceOf(OpenAiCompatibleVisionProvider::class);
+        $r = ($this->analyze)(null)->assertCreated();
+
+        Http::assertSent(function ($req) {
+            $parts = $req['messages'][0]['content'];
+
+            return $req->url() === 'https://openrouter.ai/api/v1/chat/completions' && $req->hasHeader('Authorization', 'Bearer or-test-key') && $req['model'] === 'google/gemma-4-26b-a4b-it:free'
+                && $parts[0]['type'] === 'text' && str_starts_with($parts[1]['image_url']['url'], 'data:image/jpeg;base64,') && ! isset($req['response_format']);
+        });
+        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json('data.provider'))->toBe('openai-compatible')->and($r->json('data.model'))->toBe('google/gemma-4-26b-a4b-it:free')
+            ->and($r->json('data.provider_label'))->toContain('Live AI')->and($r->json('data.extracted.model'))->toBe('HP1630')->and($r->json('data.candidates.0.variant.model_number'))->toBe('HP1630');
+        expect(json_encode($r->json()))->not->toContain('or-test-key');
+    });
+
+    it('can request JSON mode, works without a key for local servers, and reads array-style content', function () {
+        config(['hardwhere.ai.openai.json_mode' => true, 'hardwhere.ai.openai.api_key' => null, 'hardwhere.ai.openai.base_url' => 'http://localhost:11434/v1']);
+        Http::fake(['localhost:11434/*' => Http::response(['choices' => [['message' => ['content' => [['type' => 'text', 'text' => $this->json]]]]]])]);
+        ($this->analyze)(null)->assertCreated();
+        Http::assertSent(fn ($req) => $req['response_format'] === ['type' => 'json_object'] && ! $req->hasHeader('Authorization'));
+    });
+
+    it('fails safely (503, manual entry) on HTTP errors, garbage, timeouts and missing configuration', function () {
+        Http::fake(['openrouter.ai/*' => Http::response(['error' => 'rate limited'], 429)]);
+        ($this->analyze)(null)->assertStatus(503)->assertJsonPath('error.code', 'ai_unavailable');
+        Http::fake(['openrouter.ai/*' => ($this->chat)('sorry, I cannot help')]);
+        ($this->analyze)(null)->assertStatus(503);
+        Http::fake(['openrouter.ai/*' => fn () => throw new ConnectionException('timeout')]);
+        ($this->analyze)(null)->assertStatus(503);
+        config(['hardwhere.ai.openai.model' => null]);
+        ($this->analyze)(null)->assertStatus(503)->assertJsonPath('error.details.reason', 'AI_OPENAI_BASE_URL and AI_OPENAI_MODEL must be configured.');
+        expect(AiAnalysis::query()->count())->toBe(0);
+    });
 });

@@ -71,6 +71,9 @@ export function createSessionManager(opts: SessionManagerOptions): SessionManage
   let state: AuthState = { status: "restoring", profile: null };
   let issuedAt = 0;
   let cachedToken: string | null | undefined; // undefined = not read yet; saves a Keychain round trip per API call
+  // True while a login for a DIFFERENT account than the one on this device is on the wire. ApiClient reports a 403 "no_business_access"
+  // from that login through onAccessRevoked too; that is somebody else's failed sign-in, and must not wipe the signed-in user.
+  let foreignLoginInFlight = false;
   const listeners = new Set<() => void>();
 
   const setState = (status: AuthState["status"], profile: SessionProfile | null) => {
@@ -136,7 +139,9 @@ export function createSessionManager(opts: SessionManagerOptions): SessionManage
     const looksDifferent = prev && (email.trim().toLowerCase() !== prev.user.email.toLowerCase() || (!!tenantSlug && !!prev.tenant && tenantSlug !== prev.tenant.slug));
     if (prev && looksDifferent) await guardUnsent(prev.scope.key);
 
-    const res = await call();
+    foreignLoginInFlight = !!looksDifferent;
+    let res: SessionDto;
+    try { res = await call(); } finally { foreignLoginInFlight = false; }
     const next = fromDto(res);
     if (prev && prev.scope.key !== next.scope.key) {
       await guardUnsent(prev.scope.key); // authoritative check: now that the server told us who this really is
@@ -201,7 +206,8 @@ export function createSessionManager(opts: SessionManagerOptions): SessionManage
 
     markExpired: () => serial(expire),
 
-    handleAccessRevoked: () => serial(async () => {
+    // The flag is read synchronously: ApiClient calls this before login() has even rejected, and by the time a queued body would run it is reset.
+    handleAccessRevoked: () => foreignLoginInFlight ? Promise.resolve() : serial(async () => {
       const p = state.profile ?? (await readProfile())?.profile;
       if (!p) return;
       await dropToken(); // stop authenticating immediately, then remove everything the revoked member could still see

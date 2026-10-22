@@ -62,7 +62,7 @@ export function ToastHost({ children }: { children: ReactNode }) {
       {children}
       <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-0 z-[60] flex flex-col items-center gap-2 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
         {items.map((t) => (
-          <Toast key={t.id} role={t.kind === "error" ? "alert" : "status"} className="pointer-events-auto max-w-sm gap-3 !text-ink">
+          <Toast key={t.id} role={t.kind === "error" ? "alert" : "status"} className="pointer-events-auto max-w-sm gap-3">
             <span className={cx("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", t.kind === "success" ? "bg-success-soft text-success-ink" : "bg-danger-soft text-danger-ink")}>
               <Icon name={t.kind === "success" ? "check" : "alert"} />
             </span>

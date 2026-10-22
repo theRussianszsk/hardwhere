@@ -8,13 +8,21 @@ return [
     ],
 
     'ai' => [
-        // "mock" = deterministic, clearly labelled demo provider. "gemma" = Gemma 4 through the Gemini API (generateContent).
+        // "mock" = deterministic, clearly labelled demo provider. "gemma" = Gemma 4 through the Gemini API (generateContent). "openai" = OpenAI-compatible endpoint.
         'provider' => env('AI_PROVIDER', 'mock'),
         'gemma' => [
             'base_url' => env('GEMMA_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
             'api_key' => env('GEMMA_API_KEY'),
             'model' => env('GEMMA_MODEL', 'gemma-4-26b-a4b-it'),
             'timeout' => (int) env('GEMMA_TIMEOUT', 45),
+        ],
+        // "openai" = any OpenAI-compatible chat-completions endpoint with a vision model (OpenRouter, vLLM, Ollama ...).
+        'openai' => [
+            'base_url' => env('AI_OPENAI_BASE_URL', 'https://openrouter.ai/api/v1'),
+            'api_key' => env('AI_OPENAI_API_KEY'),
+            'model' => env('AI_OPENAI_MODEL'),
+            'timeout' => (int) env('AI_OPENAI_TIMEOUT', 45),
+            'json_mode' => (bool) env('AI_OPENAI_JSON_MODE', false),
         ],
         'max_image_kb' => (int) env('AI_MAX_IMAGE_KB', 8192),
         'max_image_edge' => 1600,

@@ -112,7 +112,7 @@ export async function downscaleImage(blob: Blob, o: { maxEdge?: number; quality?
     ctx.drawImage(bmp, 0, 0, width, height);
     const out = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", quality));
     if (!out || (blob.type === "image/jpeg" && out.size >= blob.size)) return blob;
-    return out;
+    return blob instanceof File ? new File([out], blob.name, { type: out.type }) : out; // keep the original file name
   } catch {
     return blob;
   } finally {

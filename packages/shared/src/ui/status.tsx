@@ -17,7 +17,7 @@ export function ConnectionBanner({ onRetry, now, ...state }: ConnectionBannerPro
   const b = connectionBanner(state, now);
   if (!b) return null;
   return (
-    <Alert color={b.color} rounded={false} role="status" aria-live="polite" className="!px-4 !py-2.5" data-banner={b.kind}>
+    <Alert color={b.color} rounded={false} role="status" aria-live="polite" data-banner={b.kind}>
       <div className="flex items-center gap-3">
         {b.icon === "spinner" ? <Spinner size="sm" aria-hidden="true" /> : <Icon name={b.icon} className="h-6 w-6" />}
         <div className="min-w-0 flex-1">

@@ -77,7 +77,8 @@ export function createApiClient(opts: ApiClientOptions) {
     if (!res.ok) {
       const err = ApiError.fromStatus(res.status, json, res.headers.get("Retry-After"));
       if (err.kind === "unauthenticated" && ep.auth !== "none") opts.onUnauthenticated?.();
-      if (err.code === "membership_revoked" || err.code === "no_business_access") opts.onAccessRevoked?.();
+      // A failed sign-in (auth: none) says nothing about the CURRENT session, so only authenticated calls can mean "access revoked".
+      if (ep.auth !== "none" && (err.code === "membership_revoked" || err.code === "no_business_access")) opts.onAccessRevoked?.();
       throw err;
     }
     if (json === null && res.status !== 204) throw new ApiError({ kind: "server", status: res.status, message: "The server sent an unreadable response." });
@@ -171,7 +172,7 @@ export function createApiClient(opts: ApiClientOptions) {
 
 function photoForm(image: Blob, extra: Record<string, string | number | undefined>): FormData {
   const f = new FormData();
-  f.append("image", image, "photo.jpg");
+  f.append("image", image, image instanceof File && image.name ? image.name : "photo.jpg"); // the name is only a demo-AI hint; live models ignore it
   for (const [k, v] of Object.entries(extra)) if (v !== undefined && v !== "") f.append(k, String(v));
   return f;
 }

@@ -8,6 +8,7 @@ import { countUnsent, createLocalStore, createMetaStore, listPhotoRefs, migrate,
 import { createConnectivity, createPhotoStore } from "../platform";
 import { createSecureTokenStore, createSessionManager } from "../session";
 import { createOutboxProcessor, createSyncEngine } from "../sync";
+import { singleFlight } from "./singleFlight";
 
 export interface HandlerDeps { api: ApiClient; photos: PhotoStore; store: LocalStore }
 export interface AppConfig {
@@ -109,26 +110,20 @@ async function doBoot(config: AppConfig): Promise<AppServices> {
       port, scope, bus, handlers: config.commandHandlers({ api, photos, store }),
       onPhotosReleased: async (refs) => void (await Promise.allSettled(refs.map((r) => photos.remove(r)))), // confirmed uploads: delete the private file
     });
-    let kicking: Promise<void> | null = null;
     let wake: ReturnType<typeof setTimeout> | undefined;
     let dead = false;
 
     const syncNow = (forceSnapshot = false) => sync.syncNow({ forceSnapshot });
-    const kickOutbox = (): Promise<void> =>
-      (kicking ??= (async () => {
-        try {
-          if (dead || session.state().status !== "signed_in" || !connectivity.snapshot().deviceOnline) return;
-          const r = await outbox.processDue();
-          if (r.authRequired) await session.markExpired();
-          if (r.confirmed > 0) void syncNow(); // refresh the cache so screens show the server's version of what was just accepted
-          if (r.nextWakeAt) {
-            clearTimeout(wake);
-            wake = setTimeout(() => void kickOutbox(), Math.max(1000, r.nextWakeAt - Date.now()));
-          }
-        } finally {
-          kicking = null;
-        }
-      })());
+    const kickOutbox = singleFlight(async () => {
+      if (dead || session.state().status !== "signed_in" || !connectivity.snapshot().deviceOnline) return;
+      const r = await outbox.processDue();
+      if (r.authRequired) await session.markExpired();
+      if (r.confirmed > 0) void syncNow(); // refresh the cache so screens show the server's version of what was just accepted
+      if (r.nextWakeAt) {
+        clearTimeout(wake);
+        wake = setTimeout(() => void kickOutbox(), Math.max(1000, r.nextWakeAt - Date.now()));
+      }
+    });
 
     let debounce: ReturnType<typeof setTimeout> | undefined;
     const offBus = bus.subscribe((e) => {

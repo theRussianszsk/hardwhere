@@ -1,3 +1,12 @@
 @import "tailwindcss";
 @import "flowbite-react/plugin/tailwindcss";
+@import "@hardwhere/shared/styles.css";
 @source "../.flowbite-react/class-list.json";
+@source "../../../packages/shared/src";
+
+/* Flowbite's Badge wraps children in a bare <span>; with Tailwind's block <svg> the icon would stack above the label. */
+[data-testid="flowbite-badge"] > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}

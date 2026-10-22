@@ -191,6 +191,38 @@ describe("account switching", () => {
   });
 });
 
+describe("403 raised by a login attempt", () => {
+  const forbidden = () => new ApiError({ kind: "forbidden", status: 403, code: "no_business_access", message: "This account has no access to that business." });
+
+  it("another person's failed sign-in does NOT wipe the signed-in user (ApiClient also reports it through onAccessRevoked)", async () => {
+    const s = setup();
+    await s.mgr.login(creds);
+    s.api.login.mockImplementationOnce(async () => { void s.mgr.handleAccessRevoked(); throw forbidden(); }); // what the client does: callback first, then throw
+    await expect(s.mgr.login({ email: "ben@cruz.ph", password: "pw", tenant: "elsewhere" })).rejects.toBeInstanceOf(ApiError);
+    await s.mgr.markExpired().then(() => s.mgr.restore()); // drain the serial queue
+    expect(s.wipe).not.toHaveBeenCalled();
+    expect(s.mgr.state().profile?.user.id).toBe(7);
+  });
+  it("the same account being refused its own business IS a revocation", async () => {
+    const s = setup();
+    await s.mgr.login(creds);
+    await s.mgr.markExpired();
+    s.api.login.mockImplementationOnce(async () => { void s.mgr.handleAccessRevoked(); throw forbidden(); });
+    await expect(s.mgr.login(creds)).rejects.toBeInstanceOf(ApiError);
+    await s.mgr.restore();
+    expect(s.wipe).toHaveBeenCalledWith(VENDOR_3, { keepUnsent: false });
+    expect(s.mgr.state().status).toBe("signed_out");
+  });
+  it("a real revocation arriving after the foreign attempt finished still works", async () => {
+    const s = setup();
+    await s.mgr.login(creds);
+    s.api.login.mockRejectedValueOnce(forbidden());
+    await expect(s.mgr.login({ email: "ben@cruz.ph", password: "pw" })).rejects.toBeInstanceOf(ApiError);
+    await s.mgr.handleAccessRevoked();
+    expect(s.wipe).toHaveBeenCalledWith(VENDOR_3, { keepUnsent: false });
+  });
+});
+
 describe("logout", () => {
   it("nothing unsent: revokes server-side, wipes the scope, clears token + profile", async () => {
     const s = setup();

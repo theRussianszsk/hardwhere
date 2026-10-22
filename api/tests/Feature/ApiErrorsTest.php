@@ -61,3 +61,13 @@ it('serves a health endpoint and reports AI mode to admins', function () {
     $this->postJson('/api/v1/auth/login', ['email' => 'o@new.test', 'password' => 'longenough123', 'app' => 'vendor'])->assertForbidden();
     $this->getJson('/api/v1/admin/tenants', $h)->assertOk()->assertJsonStructure(['data', 'meta']);
 });
+
+it('allows local and private-network dev origins (outside production) but never arbitrary sites', function () {
+    $preflight = fn (string $origin) => $this->call('OPTIONS', '/api/v1/auth/login', [], [], [], ['HTTP_ORIGIN' => $origin, 'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST', 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'content-type']);
+    foreach (['http://localhost:5173', 'http://127.0.0.1:5174', 'http://192.168.104.247:5173', 'http://10.0.2.2:5173', 'capacitor://localhost', 'https://localhost'] as $ok) {
+        expect($preflight($ok)->headers->get('Access-Control-Allow-Origin'))->toBe($ok, $ok);
+    }
+    foreach (['https://evil.example', 'http://192.168.1.1.evil.example', 'http://localhost.evil.example'] as $bad) {
+        expect($preflight($bad)->headers->get('Access-Control-Allow-Origin'))->toBeNull($bad);
+    }
+});
