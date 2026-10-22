@@ -124,6 +124,89 @@ it('orders the store comparison by distance and gives contact + directions', fun
     expect($store)->toMatchArray(['name' => 'Alpha QC', 'phone' => '+6328000000', 'city' => 'Quezon City'])->and($store['directions_url'])->toContain('destination=14.6285,121.0366');
 });
 
+it('ranks the best matches first and, among equally good ones, the closest seller; nearest_km is the closest store that sells it', function () {
+    World::stocked($this->a, $this->refs['BCD001-20V'], 4, 419000); // the drill is only sold in QC; the hammer in QC and Cebu
+    $cebu = collect($this->getJson('/api/v1/public/search?lat=10.31&lng=123.88')->assertOk()->json('data'));
+    expect($cebu->pluck('name')->all())->toBe(['Claw Hammer 51-188', 'Cordless Drill BCD001'])
+        ->and($cebu[0]['nearest_km'])->toBeLessThan(5)->and($cebu[1]['nearest_km'])->toBeGreaterThan(500);
+    $nearest = collect($this->getJson('/api/v1/public/search?lat=10.31&lng=123.88&sort=nearest')->json('data'));
+    expect($nearest->pluck('name')->first())->toBe('Claw Hammer 51-188');
+    $match = collect($this->getJson('/api/v1/public/search?q=cordless%20drill&lat=10.31&lng=123.88')->json('data'));
+    expect($match->pluck('name')->first())->toBe('Cordless Drill BCD001'); // a far exact match beats a near non-match
+    expect($this->getJson('/api/v1/public/search?q=hammer')->json('data.0'))->not->toHaveKey('nearest_km');
+});
+
+it('says when the catalogue knows a product but no registered store sells it', function () {
+    $r = $this->getJson('/api/v1/public/search?q=bosch')->assertOk();
+    expect($r->json('meta.total'))->toBe(0)->and(collect($r->json('meta_extra.unlisted_matches'))->pluck('brand')->unique()->all())->toBe(['Bosch']);
+    expect($this->getJson('/api/v1/public/search?q=hammer')->json('meta_extra.unlisted_matches'))->toBe([]);
+    expect($this->getJson('/api/v1/public/search?q=zzzqqq')->json('meta_extra.unlisted_matches'))->toBe([]);
+});
+
+it('supports a detailed search: brand, model, price range, spec, distance and fulfilment must all hold', function () {
+    World::stocked($this->a, $this->refs['BCD001-20V'], 4, 419000);
+    $cheap = World::stocked($this->b, $this->refs['BCD001-12V'], 4, 289000)['listing'];
+    $this->svc->updateListing($this->b['ctx'], $cheap->id, ['delivery_available' => false]);
+    $names = fn (string $qs) => collect($this->getJson('/api/v1/public/search?'.$qs)->assertOk()->json('data'))->pluck('name')->all();
+    expect($names('brand=black%2Bdecker'))->toBe(['Cordless Drill BCD001'])
+        ->and($names('model=bcd-001'))->toBe(['Cordless Drill BCD001'])
+        ->and($names('model=51188'))->toBe(['Claw Hammer 51-188'])
+        ->and($names('max_price_cents=300000&sort=price_asc'))->toBe(['Claw Hammer 51-188', 'Cordless Drill BCD001'])
+        ->and($names('min_price_cents=300000'))->toBe(['Cordless Drill BCD001'])
+        ->and($names('spec[voltage_v]=12'))->toBe(['Cordless Drill BCD001'])
+        ->and($names('spec[voltage_v]=24'))->toBe([])
+        ->and($names('spec[weight_oz]=16'))->toBe(['Claw Hammer 51-188']);
+    // same listing must satisfy all listing-level filters: the cheap 12V drill is in Cebu, the 20V one in QC
+    expect($names('model=bcd001&max_price_cents=300000&lat=14.63&lng=121.03&max_km=25'))->toBe([])
+        ->and($names('model=bcd001&max_price_cents=300000&lat=10.31&lng=123.88&max_km=25'))->toBe(['Cordless Drill BCD001'])
+        ->and($names('model=bcd001&fulfillment=delivery&lat=10.31&lng=123.88&max_km=25'))->toBe([]);
+    // the price range and store count describe the listings that matched, not every listing of the product
+    $capped = $this->getJson('/api/v1/public/search?model=bcd001&max_price_cents=300000')->json('data.0');
+    expect($capped)->toMatchArray(['min_price_cents' => 289000, 'max_price_cents' => 289000, 'store_count' => 1]);
+    expect($this->getJson('/api/v1/public/search?model=bcd001')->json('data.0'))->toMatchArray(['min_price_cents' => 289000, 'max_price_cents' => 419000, 'store_count' => 2]);
+    $this->getJson('/api/v1/public/search?max_km=5')->assertStatus(422);
+    $this->getJson('/api/v1/public/search?min_price_cents=500&max_price_cents=100')->assertStatus(422);
+});
+
+it('offers detailed-search choices from what stores actually list', function () {
+    World::stocked($this->a, $this->refs['BCD001-20V'], 4, 419000);
+    $f = $this->getJson('/api/v1/public/search/filters')->assertOk()->json('data');
+    expect($f['brands'])->toBe(['Black+Decker', 'Stanley']);
+    $specs = collect($f['specs'])->keyBy('key');
+    expect($specs['voltage_v'])->toMatchArray(['label' => 'Voltage', 'unit' => 'V', 'values' => ['20']])->and($specs['weight_oz']['values'])->toBe(['16']);
+    $hand = $this->getJson('/api/v1/public/search/filters?category=hand-tools')->json('data');
+    expect($hand['brands'])->toBe(['Stanley'])->and(collect($hand['specs'])->pluck('key')->all())->toBe(['weight_oz']);
+});
+
+it('lists public stores with live listing counts, nearest first, and filters by name or area', function () {
+    $names = fn ($r) => collect($r->json('data'))->pluck('name')->all();
+    $near = $this->getJson('/api/v1/public/stores?lat=10.31&lng=123.88')->assertOk();
+    expect($names($near))->toBe(['Bravo Cebu', 'Alpha QC'])->and($near->json('data.0.distance_km'))->toBeLessThan(5)->and($near->json('data.1.distance_km'))->toBeGreaterThan(500)
+        ->and($near->json('data.0.listing_count'))->toBe(1)->and($near->json('data.0.business_name'))->toBe('Bravo Hardware');
+    expect($names($this->getJson('/api/v1/public/stores')))->toBe(['Alpha QC', 'Bravo Cebu']); // no location: by business name
+    expect($names($this->getJson('/api/v1/public/stores?q=cebu')))->toBe(['Bravo Cebu']);
+    expect($names($this->getJson('/api/v1/public/stores?q=Alpha%20Hardware')))->toBe(['Alpha QC']);
+    expect($names($this->getJson('/api/v1/public/stores?q=%25')))->toBe([]); // LIKE wildcards are literal
+    $this->getJson('/api/v1/public/stores?lat=14.6')->assertStatus(422);
+
+    $this->svc->updateListing($this->b['ctx'], $this->lb->id, ['publish' => false]);
+    expect($this->getJson('/api/v1/public/stores?q=cebu')->json('data.0.listing_count'))->toBe(0); // the store stays, its count drops
+    $this->a['store']->update(['is_active' => false]);
+    $this->b['tenant']->update(['status' => 'suspended']);
+    expect($names($this->getJson('/api/v1/public/stores')))->toBe([]);
+    expect(json_encode($this->getJson('/api/v1/public/stores')->json()))->not->toContain('owner@');
+});
+
+it('searches within one store and returns product images with its listings', function () {
+    World::stocked($this->a, $this->refs['BCD001-20V'], 4, 419000);
+    $all = $this->getJson('/api/v1/public/stores/'.$this->a['store']->id.'/listings')->assertOk();
+    expect($all->json('data'))->toHaveCount(2)->and($all->json('data.0'))->toHaveKey('image_url');
+    $hit = collect($this->getJson('/api/v1/public/stores/'.$this->a['store']->id.'/listings?q=drill')->json('data'));
+    expect($hit)->toHaveCount(1)->and($hit->first()['price_cents'])->toBe(419000);
+    expect($this->getJson('/api/v1/public/stores/'.$this->a['store']->id.'/listings?q=BCD001')->json('data'))->toHaveCount(1);
+    expect($this->getJson('/api/v1/public/stores/'.$this->a['store']->id.'/listings?q=zzz')->json('data'))->toBe([]);
+});
+
 it('keeps unlisted catalog products out of search and returns 404 for unknown products', function () {
     $this->getJson('/api/v1/public/products/999999')->assertNotFound()->assertJsonPath('error.code', 'not_found');
     expect(json_encode($this->getJson('/api/v1/public/search?q=Bosch')->json('data')))->toBe('[]'); // in the catalog, but nobody sells it

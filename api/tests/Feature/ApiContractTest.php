@@ -132,11 +132,15 @@ it('writes real server responses as contract fixtures for the TypeScript type-ch
     $rec('public.categories', $this->getJson('/api/v1/public/categories'));
     $search = $this->getJson('/api/v1/public/search?q=hammer');
     $rec('public.search', $search);
+    $rec('public.search.filters', $this->getJson('/api/v1/public/search/filters?category=power-tools'));
+    $rec('public.search.unlisted', $this->getJson('/api/v1/public/search?q=bosch'));
     $pid = $search->json('data.0.id');
     $rec('public.product', $this->getJson("/api/v1/public/products/$pid"));
     $pl = $this->getJson("/api/v1/public/products/$pid/listings?lat=14.6&lng=121.0");
     $rec('public.product.listings', $pl);
     $rec('public.store', $this->getJson('/api/v1/public/stores/'.$pl->json('data.0.store.id')));
+    $rec('public.stores', $this->getJson('/api/v1/public/stores?lat=14.6&lng=121.0'));
+    $rec('public.store.listings', $this->getJson('/api/v1/public/stores/'.$pl->json('data.0.store.id').'/listings?per_page=2'));
     $rec('public.listing', $this->getJson('/api/v1/public/listings/'.$pl->json('data.0.id')));
     $rec('customer.photoSearch', $this->post('/api/v1/customer/search/photo', ['image' => $photo(), 'hint' => 'barcode-visible'], $c + idem('fx-cphoto') + $multipart));
     $rec('customer.cart', $this->putJson('/api/v1/customer/cart', ['items' => [['listing_id' => $pl->json('data.0.id'), 'quantity' => 1]]], $c));

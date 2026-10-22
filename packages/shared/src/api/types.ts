@@ -121,9 +121,42 @@ export interface ProductDto {
   min_price_cents?: Cents;
   max_price_cents?: Cents;
   store_count?: number;
+  /** Search with a location only: km to the closest store that sells it. */
+  nearest_km?: number;
   relevance?: number;
   row_version: number;
   updated_at: IsoDateTime | null;
+}
+
+// ---- search
+export type SearchSort = "relevance" | "nearest" | "price_asc" | "price_desc";
+/** Traditional search uses q/category/sort/in_stock; the detailed search adds the explicit filters. */
+export interface PublicSearchQuery {
+  q?: string;
+  brand?: string;
+  model?: string;
+  category?: string;
+  sort?: SearchSort;
+  in_stock?: boolean;
+  lat?: number;
+  lng?: number;
+  max_km?: number;
+  min_price_cents?: Cents;
+  max_price_cents?: Cents;
+  fulfillment?: "pickup" | "delivery";
+  /** attribute key -> exact value, e.g. { voltage_v: "20" } */
+  spec?: Record<string, string>;
+  page?: number;
+  per_page?: number;
+}
+export interface SearchMetaExtra {
+  server_time: string;
+  /** When nothing is on sale: catalogue products that match but no registered store sells yet. */
+  unlisted_matches?: { id: number; name: string; brand: string | null; model_number: string | null }[];
+}
+export interface SearchFiltersDto {
+  brands: string[];
+  specs: { key: string; label: string; unit: string | null; values: string[] }[];
 }
 
 // ---- stores & listings
@@ -145,6 +178,10 @@ export interface PublicStoreDto {
   supports_delivery: boolean;
   directions_url: string;
   updated_at: IsoDateTime | null;
+  /** Store directory only: live marketplace listings at this store. */
+  listing_count?: number;
+  /** Store directory only, when a location was sent. */
+  distance_km?: number;
 }
 export type AvailabilityStatus = "in_stock" | "low_stock" | "out_of_stock";
 export interface Availability {
@@ -170,6 +207,8 @@ export interface PublicListingDto {
   lead_time_hours: number;
   store?: PublicStoreDto;
   variant?: VariantDto;
+  /** Store listings only: the canonical product's primary image (API-relative). */
+  image_url?: string | null;
   distance_km?: number;
   row_version: number;
   updated_at: IsoDateTime | null;

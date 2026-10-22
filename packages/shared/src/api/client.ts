@@ -100,14 +100,17 @@ export function createApiClient(opts: ApiClientOptions) {
 
     // ---- public / customer
     publicCategories: () => call<{ data: T.CategoryDto[] }>("publicCategories"),
-    publicSearch: (query: { q?: string; brand?: string; category?: string; sort?: string; in_stock?: boolean; page?: number; per_page?: number }) =>
-      call<T.Paginated<T.ProductDto> & { meta_extra?: { server_time: string } }>("publicSearch", q(query)),
+    publicSearch: ({ spec, ...query }: T.PublicSearchQuery) =>
+      call<T.Paginated<T.ProductDto> & { meta_extra?: T.SearchMetaExtra }>("publicSearch", q({ ...query, ...Object.fromEntries(Object.entries(spec ?? {}).map(([k, v]) => [`spec[${k}]`, v])) })),
+    publicSearchFilters: (category?: string) => call<{ data: T.SearchFiltersDto; meta: { server_time: string } }>("publicSearchFilters", q({ category })),
     publicProduct: (product: number) => call<T.Wrapped<T.ProductDto>>("publicProduct", { params: { product } }),
     publicProductListings: (product: number, geo?: { lat?: number; lng?: number }) =>
       call<{ data: T.PublicListingDto[]; meta: { server_time: string; count: number } }>("publicProductListings", { params: { product }, ...q(geo) }),
     publicListing: (listing: number) => call<T.Wrapped<T.PublicListingDto>>("publicListing", { params: { listing } }),
+    publicStores: (query: { q?: string; lat?: number; lng?: number; page?: number; per_page?: number } = {}) =>
+      call<T.Paginated<T.PublicStoreDto> & { meta_extra?: { server_time: string } }>("publicStores", q(query)),
     publicStore: (store: number) => call<T.Wrapped<T.PublicStoreDto>>("publicStore", { params: { store } }),
-    publicStoreListings: (store: number, page = 1) => call<T.Paginated<T.PublicListingDto>>("publicStoreListings", { params: { store }, ...q({ page }) }),
+    publicStoreListings: (store: number, page = 1, search?: string) => call<T.Paginated<T.PublicListingDto>>("publicStoreListings", { params: { store }, ...q({ page, q: search || undefined }) }),
     customerPhotoSearch: (image: Blob, idempotencyKey: string, hint?: string) =>
       call<{ data: T.AiAnalysisDto; meta: { server_time: string } }>("customerPhotoSearch", { form: photoForm(image, { hint }), idempotencyKey }),
     cartGet: () => call<T.Wrapped<T.CartDto>>("cartGet"),

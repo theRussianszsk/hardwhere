@@ -1,0 +1,31 @@
+{
+    "data": {
+        "brands": [
+            "Black+Decker",
+            "Bosch"
+        ],
+        "specs": [
+            {
+                "key": "kit",
+                "label": "Kit contents",
+                "unit": null,
+                "values": [
+                    "2 batteries",
+                    "bare tool"
+                ]
+            },
+            {
+                "key": "voltage_v",
+                "label": "Voltage",
+                "unit": "V",
+                "values": [
+                    "12",
+                    "18"
+                ]
+            }
+        ]
+    },
+    "meta": {
+        "server_time": "2026-01-01T00:00:00+00:00"
+    }
+}

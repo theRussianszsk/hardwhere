@@ -34,9 +34,11 @@ Route::prefix('v1')->group(function () {
     Route::prefix('public')->middleware('throttle:public')->group(function () {
         Route::get('categories', [MarketplaceController::class, 'categories']);
         Route::get('search', [MarketplaceController::class, 'search']);
+        Route::get('search/filters', [MarketplaceController::class, 'searchFilters']);
         Route::get('products/{product}', [MarketplaceController::class, 'product']);
         Route::get('products/{product}/listings', [MarketplaceController::class, 'listings']);
         Route::get('listings/{listing}', [MarketplaceController::class, 'listing']);
+        Route::get('stores', [MarketplaceController::class, 'stores']);
         Route::get('stores/{store}', [MarketplaceController::class, 'store']);
         Route::get('stores/{store}/listings', [MarketplaceController::class, 'storeListings']);
         Route::get('sync/snapshot', [SyncController::class, 'snapshot'])->defaults('kind', 'public');

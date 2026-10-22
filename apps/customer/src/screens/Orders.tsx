@@ -197,7 +197,7 @@ export function OrderDetailScreen() {
       {s && (
         <Card className="space-y-2">
           <h2 className="text-sm font-bold">Store</h2>
-          <div className="text-sm"><p className="font-semibold">{s.business_name} · {s.name}</p>
+          <div className="text-sm"><Link to={`/store/${s.id}`} className="font-semibold underline decoration-line underline-offset-2">{s.business_name} · {s.name}</Link>
             <p className="text-xs text-ink-muted">{[s.address_line, s.barangay, s.city, s.province].filter(Boolean).join(", ")}</p>
             {formatHours(s.hours) && <p className="text-xs text-ink-muted">Hours: {formatHours(s.hours)}</p>}
             {s.phone && <p className="text-xs text-ink-muted">Phone: {s.phone}</p>}</div>

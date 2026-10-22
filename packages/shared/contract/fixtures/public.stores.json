@@ -1,0 +1,96 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Kamuning Branch",
+            "address_line": "45 K-1st St, Kamuning",
+            "barangay": null,
+            "city": "Quezon City",
+            "province": "Metro Manila",
+            "postal_code": null,
+            "lat": 14.6285,
+            "lng": 121.0366,
+            "phone": "+6328123001",
+            "email": "dch-qc@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "listing_count": 20,
+            "distance_km": 5.1
+        },
+        {
+            "id": 1,
+            "business_name": "Mabini Builders Supply",
+            "name": "Marikina Showroom",
+            "address_line": "88 Shoe Ave, Sto. Niño",
+            "barangay": null,
+            "city": "Marikina",
+            "province": "Metro Manila",
+            "postal_code": null,
+            "lat": 14.6507,
+            "lng": 121.1029,
+            "phone": "+6329421001",
+            "email": "mbs-mr@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6507,121.1029",
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "listing_count": 11,
+            "distance_km": 12.4
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/public/stores?page=1",
+        "last": "http://localhost:8000/api/v1/public/stores?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/public/stores?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/public/stores",
+        "per_page": 20,
+        "to": 4,
+        "total": 4
+    },
+    "meta_extra": {
+        "server_time": "2026-01-01T00:00:00+00:00"
+    }
+}

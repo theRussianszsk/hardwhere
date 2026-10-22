@@ -12,6 +12,8 @@ import { OrderDetailScreen, OrdersScreen } from "./screens/Orders";
 import { PhotoSearchScreen } from "./screens/PhotoSearch";
 import { ProductScreen } from "./screens/Product";
 import { SearchScreen } from "./screens/Search";
+import { DetailedSearchScreen } from "./screens/DetailedSearch";
+import { StoreScreen, StoresScreen } from "./screens/Stores";
 
 function Banners() {
   const conn = useConnectivity();
@@ -47,6 +49,7 @@ function Banners() {
 
 const icons = {
   search: "M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z",
+  stores: "M3 10l1.5-6h15L21 10M3 10h18M3 10a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0M5 13v8h14v-8M10 21v-5h4v5",
   cart: "M3 4h2l2.4 11h10.2L20 7H6.2M9 20a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z",
   orders: "M7 3h10a1 1 0 011 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 011-1zm2 5h6m-6 4h6",
   account: "M12 12a4 4 0 100-8 4 4 0 000 8zm-8 9a8 8 0 0116 0",
@@ -104,7 +107,10 @@ export function App() {
       <main key={loc.pathname.split("/")[1]} className="flex-1 pb-24">
         <Routes>
           <Route path="/" element={<SearchScreen />} />
+          <Route path="/search/detailed" element={<DetailedSearchScreen />} />
           <Route path="/photo" element={<PhotoSearchScreen />} />
+          <Route path="/stores" element={<StoresScreen />} />
+          <Route path="/store/:id" element={<StoreScreen />} />
           <Route path="/product/:id" element={<ProductScreen />} />
           <Route path="/cart" element={<CartScreen />} />
           <Route path="/checkout/:storeId" element={<CheckoutScreen />} />
@@ -118,6 +124,7 @@ export function App() {
       </main>
       <nav aria-label="Main" className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)]">
         <NavItem to="/" label="Search" icon="search" />
+        <NavItem to="/stores" label="Stores" icon="stores" />
         <NavItem to="/cart" label="Cart" icon="cart" badge={cart.count} />
         <NavItem to="/orders" label="Orders" icon="orders" />
         <NavItem to="/account" label="Account" icon="account" />

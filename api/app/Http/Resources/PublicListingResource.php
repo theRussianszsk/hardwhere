@@ -21,6 +21,7 @@ class PublicListingResource extends JsonResource
             'min_order_qty' => $this->min_order_qty, 'max_order_qty' => $this->max_order_qty, 'lead_time_hours' => $this->lead_time_hours,
             'store' => new PublicStoreResource($this->whenLoaded('store')),
             'variant' => new VariantResource($this->whenLoaded('variant')),
+            'image_url' => $this->when($this->resource->relationLoaded('product'), fn () => $this->product?->images->whereNull('tenant_id')->sortByDesc('is_primary')->first()?->path),
             'distance_km' => $this->when($this->resource->getAttribute('distance_km') !== null, fn () => $this->resource->getAttribute('distance_km')),
             'row_version' => $this->row_version, 'updated_at' => $this->updated_at?->toIso8601String(),
         ];
