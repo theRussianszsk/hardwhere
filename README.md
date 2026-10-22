@@ -29,11 +29,40 @@ Same deck in this repository: [inventOS_pitch_slides_4x3.pdf](inventOS_pitch_sli
 
 **Solution and value:** Staff photograph a product instead of scanning a barcode. Gemma 4 reads the brand, model and specs, proposes the catalog match, and a person confirms. Sales then update stock atomically, and the same live stock feeds a marketplace where buyers compare nearby stores by price, availability and distance, and reserve. Variants such as 720W vs 840W grinders are never merged.
 
-**Revenue / sustainability:** Free Starter plan (300 SKUs, 50 AI intakes a month); Pro at ₱799/month (unlimited SKUs, marketplace listing); Multi-branch at ₱1,999/month. Later: ₱2,500 done-for-you shelf onboarding and featured listings. AI cost is small: about ₱0.02 per photo in our live tests.
+**Revenue model.** Marketplace listing stays **free for every store**: buyers only come if stores are listed, so supply is never paywalled. Stores pay for capacity and for what the network learns:
+
+| Plan | Price | What it adds |
+|---|---|---|
+| Starter | Free | Up to 300 SKUs, 50 AI photo intakes a month, marketplace listing, one branch. The AI bill is about ₱1 a store a month (50 × ₱0.02). |
+| Pro | ₱799/month, or ₱7,990 a year (two months free) | Unlimited SKUs and intakes, **demand alerts** ("14 buyers searched a 20A breaker within 3 km this week"), staff roles, reports. |
+| Multi-branch | ₱1,999/month | Up to 3 branches under one owner, with per-branch stock and reports. |
+
+Stages, each unlocked by store density rather than by calendar:
+1. **Subscriptions only** (first ~300 stores).
+2. **Once a city has enough stores to anonymise:** featured store placement (always labelled, never changes exact-match ranking); paid sell-through and availability insights for brands and distributors (aggregated counts only, RA 10173); restock leads sent to distributors when an item runs low.
+3. **With licensed partners only:** inventory financing referrals and GCash/Maya checkout revenue share. Not planned to be built in-house.
+
+Done-for-you shelf onboarding (₱2,500) is for large stores (about 1,000+ SKUs); the first shelf stays free during the pilot.
+
+**Unit economics** (the pitch deck's figures: ₱799 Pro, about 76% gross margin, ₱1,350 to acquire a store, ₱205k a month operating cost at month 12):
+
+| | Paying stores needed to break even |
+|---|---|
+| Deck baseline: ₱610 contribution per store | about 336 |
+| 20% of stores on Multi-branch (blended ₱1,039, about ₱793 contribution) | about 259 |
+| Baseline plus ₱50k a month from brand insights (a hypothesis, not validated) | about 254 |
+| Both | about 196 |
+
+| Monthly churn | 3% | 5% | 8% |
+|---|---|---|---|
+| Lifetime contribution per store | ₱20.3k | ₱12.2k | ₱7.6k |
+| Multiple of the ₱1,350 acquisition cost | 15× | 9× | 5.6× |
+
+**Weak spots we are not hiding.** (a) The plan assumes 50% of onboarded stores pay, so the baseline's ~336 paying stores means ~670 onboarded, against 300 at month 12: about 90 a month for four months, versus about 25 a month in year one. This is the riskiest assumption and the pilot must measure it. (b) The ₱2M ask funds 12 months, but baseline break-even is at months 14–16, so plan a cushion of a few hundred thousand pesos or a bridge. (c) Bookkeeper partners get 20% (₱160 a month a store); cap it at the first 12 months so it does not erode contribution for good. (d) Brand and distributor revenue needs store density first, so it is upside, not part of break-even. (e) **Plans, billing and quotas are not implemented in the app**: today there are roles and published/unpublished listings only.
 
 **Competition:** Notebooks and Excel are free but give no live stock. Loyverse and local POS systems (UTAK, StoreHub, about ₱1,500–2,300/month) are barcode-centric and built mainly for food and beverage. Shopee and Lazada deliver in days; big-box stores are far away. We combine AI photo intake for unbarcoded hardware with local discovery fed by daily POS use.
 
-**Next steps:** Run the 10-store Cebu pilot and measure intake accuracy; ship native Android builds; add bookkeeper reports (inventory valuation, cost of goods sold, CSV export) for the partner channel.
+**Next steps:** Run the 10-store Cebu pilot and measure intake accuracy, Starter-to-Pro conversion and monthly churn; ship native Android builds; add bookkeeper reports (inventory valuation, cost of goods sold, CSV export) for the partner channel.
 
 ## Architecture
 
