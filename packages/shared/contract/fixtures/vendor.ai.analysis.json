@@ -29,7 +29,12 @@
             "image_sufficient": true,
             "notes": [
                 "Demo AI (deterministic mock): not a live model result."
-            ]
+            ],
+            "product_type": null,
+            "subcategory": null,
+            "material": null,
+            "description": null,
+            "estimated_price_php": null
         },
         "classification": "likely_same_product",
         "overall_confidence": 0.62,
