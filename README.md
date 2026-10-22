@@ -193,6 +193,8 @@ PHP coverage includes: tenant isolation (API, Eloquent scope, composite FKs), ro
 
 ## Demo script (the 18-step scenario)
 
+A 107 s screen recording of the flow below (vendor and customer phones side by side, live Gemma 4 via OpenRouter for the photo step) is in [`docs/demo/hardwhere-demo.mp4`](docs/demo/hardwhere-demo.mp4). Sign out of the vendor app via the sync pill (top right) → **Sign out**; run `scripts/demo-reset.sh` before a live demo.
+
 `api/tests/Feature/DemoScenarioTest.php` runs this end to end over HTTP; the apps reproduce it by hand:
 
 1. Vendor app → sign in as `staff.a@hardwhere.test` (Dela Cruz Hardware). 2. **Add** → photograph an unbarcoded power tool (use *Demo photo → makita-hp1630*).
