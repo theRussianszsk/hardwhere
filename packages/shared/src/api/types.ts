@@ -429,10 +429,14 @@ export interface ExtractedProduct {
   confidence: Record<string, number>;
   overall_confidence: number;
   image_sufficient: boolean;
+  /** false: not something a hardware store sells; the analysis is then classified "not_hardware" with no candidates. */
+  is_hardware: boolean;
   notes: string[];
 }
 export type MatchClass =
   | "exact_match" | "likely_same_product" | "likely_variant" | "possible_duplicate" | "new_product_candidate" | "insufficient_confidence";
+/** Analysis-level classification: a match class, or "not_hardware" (never on a candidate). */
+export type AnalysisClass = MatchClass | "not_hardware";
 export interface MatchCandidateDto {
   rank: number;
   classification: MatchClass;
@@ -446,13 +450,11 @@ export interface MatchCandidateDto {
 export interface AiAnalysisDto {
   id: number;
   purpose: "intake" | "pos_search" | "marketplace_search";
-  provider: string;
-  model: string | null;
   is_mock: boolean;
-  /** Always show this: it says whether the result is a deterministic demo or live inference. */
+  /** Says whether the result is a deterministic demo or live inference; the provider/model is never sent to clients. */
   provider_label: string;
   extracted: ExtractedProduct;
-  classification: MatchClass;
+  classification: AnalysisClass;
   overall_confidence: number;
   requires_confirmation: boolean;
   warnings: string[];

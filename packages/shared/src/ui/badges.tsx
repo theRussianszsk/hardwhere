@@ -1,5 +1,5 @@
 import { Alert, Badge, Spinner } from "flowbite-react";
-import type { AvailabilityStatus, MatchClass } from "../api/types";
+import type { AnalysisClass, AvailabilityStatus } from "../api/types";
 import { formatPeso } from "../format";
 import { CONFIDENCE_META, confidenceLevel, confidencePercent, isStatusKind, MATCH_META, STATUS_META, STOCK_META, type StatusKind } from "./logic";
 import { Icon } from "./icons";
@@ -20,7 +20,7 @@ export function ConfidenceBadge({ value, compact, className }: { value: number; 
   );
 }
 
-export function MatchBadge({ classification, showHint, className }: { classification: MatchClass; showHint?: boolean; className?: string }) {
+export function MatchBadge({ classification, showHint, className }: { classification: AnalysisClass; showHint?: boolean; className?: string }) {
   const m = MATCH_META[classification];
   return (
     <span className={cx("inline-flex flex-col items-start gap-1", className)}>

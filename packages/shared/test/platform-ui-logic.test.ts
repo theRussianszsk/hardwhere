@@ -52,7 +52,7 @@ describe("confidence + match wording", () => {
     expect(confidencePercent(-1)).toBe(0);
   });
   it("every match class has plain wording", () => {
-    expect(Object.values(MATCH_META).map((m) => m.label)).toEqual(["Exact match", "Likely same product", "Likely variant", "Possible duplicate", "New product", "Not enough confidence"]);
+    expect(Object.values(MATCH_META).map((m) => m.label)).toEqual(["Exact match", "Likely same product", "Likely variant", "Possible duplicate", "New product", "Not enough confidence", "Not a hardware product"]);
   });
   it("stock buckets", () => {
     expect(Object.values(STOCK_META).map((m) => m.label)).toEqual(["In stock", "Low stock", "Out of stock"]);

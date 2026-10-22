@@ -4,7 +4,7 @@
  */
 import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { Modal, ModalBody, ModalHeader, Spinner } from "flowbite-react";
-import { formatAge, parsePesoToCents, useSyncStatus, type MatchClass, type OutboxState } from "@hardwhere/shared";
+import { formatAge, parsePesoToCents, useSyncStatus, type AnalysisClass, type OutboxState } from "@hardwhere/shared";
 import {
   ConfidenceBadge as KitConfidence, ConfirmDialog as KitConfirm, DemoAiBadge as KitDemo, MatchBadge as KitMatch, Money as KitMoney,
   StatusPill as KitStatus, StockBadge as KitStock, WarningList as KitWarn,
@@ -159,7 +159,7 @@ export function Pill({ tone = "slate", children }: { tone?: "slate" | "green" | 
 export function ConfidenceBadge({ value }: { value: number | null | undefined; label?: string }) {
   return value === null || value === undefined ? null : <KitConfidence value={value} compact />;
 }
-export const MatchBadge = ({ value }: { value: MatchClass }) => <KitMatch classification={value} />;
+export const MatchBadge = ({ value }: { value: AnalysisClass }) => <KitMatch classification={value} />;
 
 /** The kit badge (always says "Demo AI") plus the server's own provider_label, so what produced the result is never hidden. */
 export function DemoAiBadge({ label }: { label: string }) {
