@@ -10,7 +10,10 @@ import { Alert, Btn, Card, EmptyState, LoadingState, TextField } from "../ui";
 
 interface Pick { productName: string; brand: string | null; variantId: number; variantName: string; model: string | null; attrs: string }
 interface ManualDraft { pick: Pick | null; inv: InvForm }
+interface Sent { id: string; title: string }
 const EMPTY: ManualDraft = { pick: null, inv: EMPTY_INV };
+/** Entries of each queued add, keyed by outbox id, kept until the server confirms it so a refused one (e.g. SKU taken) can be fixed and resent. */
+const SENT_KIND = "intake-manual-sent";
 
 const attrText = (a: VariantDto["attributes"]) => Object.entries(a ?? {}).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(", ");
 const withBrand = (brand: string | null, name: string) => (brand && !name.toLowerCase().startsWith(brand.toLowerCase()) ? `${brand} ${name}` : name);
@@ -26,7 +29,8 @@ export function ManualEntry() {
   const [liveHits, setLiveHits] = useState<Pick[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchErr, setSearchErr] = useState<string | null>(null);
-  const [sent, setSent] = useState<{ id: string; title: string } | null>(null);
+  const [sent, setSent] = useState<Sent | null>(null);
+  const [failed, setFailed] = useState<Sent[]>([]);
   const [submitErr, setSubmitErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { api } = useServices();
@@ -48,6 +52,33 @@ export function ManualEntry() {
     return () => { alive = false; clearTimeout(t); };
   }, [q, online, api]);
 
+  // Drop saved entries once their add is confirmed (or discarded); surface the ones the server refused.
+  useEffect(() => {
+    if (!active) return;
+    let alive = true;
+    const scan = async () => {
+      const keep: Sent[] = [];
+      for (const r of await active.store.drafts.list<Sent & ManualDraft>(SENT_KIND)) {
+        const o = await active.store.outbox.get(r.id);
+        if (!o || o.state === "confirmed") await active.store.drafts.remove(SENT_KIND, r.id);
+        else if (o.state === "needs_review" || o.state === "rejected") keep.push({ id: r.id, title: r.payload.title });
+      }
+      if (alive) setFailed(keep);
+    };
+    void scan();
+    const off = active.store.onChange((e) => { if (e.area === "outbox") void scan(); });
+    return () => { alive = false; off(); };
+  }, [active]);
+
+  const editAgain = async (id: string) => {
+    if (!active) return;
+    const saved = await active.store.drafts.get<Sent & ManualDraft>(SENT_KIND, id);
+    if (saved) draft.set({ pick: saved.pick, inv: saved.inv });
+    await active.store.outbox.discard(id);
+    await active.store.drafts.remove(SENT_KIND, id);
+    setSent(null);
+  };
+
   const hits = liveHits ?? (q.trim().length >= 1 ? cachedHits : []);
   const problems = invProblems(inv);
   const ok = Object.keys(problems).length === 0 && pick !== null;
@@ -63,6 +94,7 @@ export function ManualEntry() {
         variant_id: pick.variantId, tenant_sku: inv.sku.trim(), cost_cents: inv.cost, price_cents: inv.price, quantity: inv.qty, reorder_threshold: inv.reorder,
         store_id: inv.storeId, ...(inv.locationId ? { location_id: inv.locationId } : {}),
       }, { id: newId(), label: title });
+      await active.store.drafts.put(SENT_KIND, row.id, { id: row.id, title, pick, inv });
       void active.kickOutbox();
       setSent({ id: row.id, title });
       await draft.clear();
@@ -75,11 +107,18 @@ export function ManualEntry() {
     <Screen title="Manual entry" back="/add">
       {sent ? (
         <>
-          <CommandStatus id={sent.id} title={sent.title} confirmedText="Added to stock — the server confirmed it." onConfirmed={() => void active?.syncNow()} />
+          <CommandStatus id={sent.id} title={sent.title} confirmedText="Added to stock — the server confirmed it." onConfirmed={() => void active?.syncNow()} onDismiss={() => setSent(null)} />
+          {failed.some((f) => f.id === sent.id) && <Btn block onClick={() => void editAgain(sent.id)}>Fix the entries and send again</Btn>}
           <div className="grid grid-cols-2 gap-2"><Btn variant="secondary" onClick={() => setSent(null)}>Add another</Btn><Link to="/stock"><Btn block>Go to stock</Btn></Link></div>
         </>
       ) : (
         <>
+          {failed.map((f) => (
+            <div key={f.id} className="space-y-2">
+              <CommandStatus id={f.id} title={f.title} />
+              <Btn block variant="secondary" onClick={() => void editAgain(f.id)}>Fix the entries and send again</Btn>
+            </div>
+          ))}
           <Alert tone="info">{online ? "Search the Hardwhere catalogue for the exact product." : "You're offline: searching the catalogue saved on this phone. The item is queued and added when you're back online."} Your entries are saved as a draft.</Alert>
 
           {!pick ? (

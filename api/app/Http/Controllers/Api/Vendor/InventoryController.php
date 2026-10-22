@@ -86,10 +86,15 @@ class InventoryController extends Controller
 
     public function store(StoreItemRequest $request): JsonResponse
     {
+        $ctx = $this->ctx();
         $d = $request->validated();
-        $item = $this->inventory->createItem($this->ctx(), $d['variant_id'], $d + ['source' => 'manual']);
+        // A retry after a lost response replays the item instead of answering 409 already_stocked for stock it did add.
+        [$item, $replayed] = $this->idempotency->run("t{$ctx->tenantId}:u{$ctx->userId}", $this->idempotencyKey($request), 'inventory.create', Idempotency::hash($d), InventoryItem::class,
+            fn () => $this->inventory->createItem($ctx, $d['variant_id'], $d + ['source' => 'manual']));
+        $locationIds = $this->storeLocationIds($ctx);
+        $item->loadMissing(['variant.product', 'snapshots' => fn ($s) => $locationIds === null ? $s : $s->whereIn('location_id', $locationIds)]);
 
-        return (new InventoryItemResource($item))->response()->setStatusCode(201);
+        return (new InventoryItemResource($item))->additional(['replayed' => $replayed])->response()->setStatusCode($replayed ? 200 : 201);
     }
 
     public function ledger(Request $request, int $item)
