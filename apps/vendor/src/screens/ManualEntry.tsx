@@ -109,7 +109,7 @@ export function ManualEntry() {
               <TenantStockForm value={inv} onChange={(v) => draft.set({ pick, inv: v })} errors={problems} />
               {submitErr && <Alert tone="error">{submitErr}</Alert>}
               <Btn block busy={busy} disabled={!ok} onClick={() => void save()}>{online ? "Add to stock" : "Save — add when online"}</Btn>
-              <p className="text-xs text-slate-600">Queued first, then confirmed by the server. If you already stock this product the server will say so and nothing is duplicated.</p>
+              <p className="text-xs text-slate-600">Queued first, then confirmed by the server. If this store already stocks this product the server will say so and nothing is duplicated.</p>
             </>
           )}
         </>

@@ -19,7 +19,9 @@ class InventoryService
     public function __construct(private StockService $stock, private SyncRecorder $sync, private AuditLogger $audit) {}
 
     /**
-     * Stock a canonical variant for this tenant: item + mapping provenance + draft listing + opening balance, all or nothing.
+     * Stock a canonical variant for this tenant at one store: item + mapping provenance + draft listing + opening balance, all or nothing.
+     * The item is tenant-wide (one per variant) while each store sells it through its own listing and holds its own stock, so stocking an
+     * item the tenant already carries at another store adds that store's listing and opening balance to the existing item.
      * Used by manual entry and by AI-assisted intake after explicit human confirmation.
      *
      * @param  array<string, mixed>  $d  tenant_sku, cost_cents, price_cents, quantity, reorder_threshold, supplier_id?, store_id, location_id?, source, ai_analysis_id?, confidence?
@@ -33,30 +35,34 @@ class InventoryService
             $variant = ProductVariant::query()->with('product')->whereHas('product', fn ($q) => $q->where('status', 'approved')->orWhere('submitted_by_tenant_id', $ctx->tenantId))->find($variantId)
                 ?? throw ApiException::invalid('unknown_variant', 'That catalog product is not available.');
             $store = Store::query()->forTenant($ctx)->find($d['store_id']) ?? throw ApiException::notFound('Store');
-
-            if ($existing = InventoryItem::query()->forTenant($ctx)->where('variant_id', $variant->id)->first()) {
-                throw ApiException::conflict('already_stocked', 'You already stock this product. Adjust its stock instead of adding it again.', ['inventory_item_id' => $existing->id]);
-            }
-            if (InventoryItem::query()->forTenant($ctx)->where('tenant_sku', $d['tenant_sku'])->exists()) {
-                throw ApiException::conflict('sku_taken', 'That SKU is already used by another item.');
-            }
-
             $location = isset($d['location_id'])
                 ? InventoryLocation::query()->forTenant($ctx)->where('store_id', $store->id)->find($d['location_id'])
                 : InventoryLocation::query()->forTenant($ctx)->where('store_id', $store->id)->orderBy('id')->first();
             $location ?? throw ApiException::invalid('unknown_location', 'Choose a stock location in this store.');
 
-            $item = InventoryItem::create([
-                'tenant_id' => $ctx->tenantId, 'variant_id' => $variant->id, 'tenant_sku' => $d['tenant_sku'], 'cost_cents' => $d['cost_cents'] ?? 0,
-                'supplier_id' => $d['supplier_id'] ?? null, 'reorder_threshold' => $d['reorder_threshold'] ?? 0, 'default_location_id' => $location->id,
-            ]);
-            TenantProductMapping::create([
-                'tenant_id' => $ctx->tenantId, 'inventory_item_id' => $item->id, 'variant_id' => $variant->id, 'source' => $d['source'] ?? 'manual',
-                'ai_analysis_id' => $d['ai_analysis_id'] ?? null, 'confidence' => $d['confidence'] ?? null, 'confirmed_by' => $ctx->userId, 'confirmed_at' => now(),
-            ]);
+            // Locked so two stores adding the same existing item at once serialise here instead of racing on the listing index.
+            if ($item = InventoryItem::query()->forTenant($ctx)->where('variant_id', $variant->id)->lockForUpdate()->first()) {
+                if (TenantListing::query()->forTenant($ctx)->where('store_id', $store->id)->where('variant_id', $variant->id)->exists()) {
+                    throw ApiException::conflict('already_stocked', 'This store already stocks this product. Adjust its stock instead of adding it again.', ['inventory_item_id' => $item->id]);
+                }
+            } else {
+                if (InventoryItem::query()->forTenant($ctx)->where('tenant_sku', $d['tenant_sku'])->exists()) {
+                    throw ApiException::conflict('sku_taken', 'That SKU is already used by another item.');
+                }
+                $item = InventoryItem::create([
+                    'tenant_id' => $ctx->tenantId, 'variant_id' => $variant->id, 'tenant_sku' => $d['tenant_sku'], 'cost_cents' => $d['cost_cents'] ?? 0,
+                    'supplier_id' => $d['supplier_id'] ?? null, 'reorder_threshold' => $d['reorder_threshold'] ?? 0, 'default_location_id' => $location->id,
+                ]);
+                TenantProductMapping::create([
+                    'tenant_id' => $ctx->tenantId, 'inventory_item_id' => $item->id, 'variant_id' => $variant->id, 'source' => $d['source'] ?? 'manual',
+                    'ai_analysis_id' => $d['ai_analysis_id'] ?? null, 'confidence' => $d['confidence'] ?? null, 'confirmed_by' => $ctx->userId, 'confirmed_at' => now(),
+                ]);
+            }
+
+            // An existing item keeps its tenant-wide SKU, cost and reorder threshold; the new store brings only its own price and stock.
             $listing = TenantListing::create([
                 'tenant_id' => $ctx->tenantId, 'store_id' => $store->id, 'inventory_item_id' => $item->id, 'product_id' => $variant->product_id,
-                'variant_id' => $variant->id, 'tenant_sku' => $d['tenant_sku'], 'price_cents' => $d['price_cents'], 'uom' => $variant->uom,
+                'variant_id' => $variant->id, 'tenant_sku' => $item->tenant_sku, 'price_cents' => $d['price_cents'], 'uom' => $variant->uom,
                 'visibility' => 'hidden', 'publication_status' => 'draft',
             ]);
 
@@ -66,9 +72,11 @@ class InventoryService
 
             $this->sync->tenantEntity($ctx->tenantId, 'inventory_item', $item->id);
             $this->sync->listing($ctx->tenantId, $listing->id);
-            $this->audit->record('inventory.item.created', $ctx, $item, ['sku' => $item->tenant_sku, 'source' => $d['source'] ?? 'manual']);
+            $this->audit->record($item->wasRecentlyCreated ? 'inventory.item.created' : 'inventory.item.stocked_at_store', $ctx, $item, ['sku' => $item->tenant_sku, 'store_id' => $store->id, 'source' => $d['source'] ?? 'manual']);
 
-            return $item->load('variant.product', 'snapshots');
+            $locationIds = $ctx->storeId === null ? null : InventoryLocation::query()->forTenant($ctx)->where('store_id', $ctx->storeId)->pluck('id');
+
+            return $item->load(['variant.product', 'snapshots' => fn ($s) => $locationIds === null ? $s : $s->whereIn('location_id', $locationIds)]);
         });
     }
 

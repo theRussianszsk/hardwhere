@@ -131,9 +131,11 @@ function AdjustSheet({ open, onClose, item, locations, onQueued }: { open: boole
   const t = TYPES.find((x) => x.value === type)!;
   const sign = t.sign === 0 ? (dir === "add" ? 1 : -1) : t.sign;
   const delta = sign * qty;
-  const itemLocs = item.locations?.length ? item.locations.map((l) => l.location_id) : item.default_location_id ? [item.default_location_id] : [];
-  const effectiveLoc = locId ?? itemLocs[0] ?? null;
-  const locOnHand = item.locations?.find((l) => l.location_id === effectiveLoc)?.on_hand ?? item.on_hand;
+  // Locations already holding this item plus every sellable location the user may access (the server scopes both to their store).
+  const accessible = [...new Set([...(item.locations ?? []).map((l) => l.location_id), ...locations.filter((l) => l.is_sellable).map((l) => l.id)])];
+  const itemLocs = accessible.length ? accessible : item.default_location_id ? [item.default_location_id] : [];
+  const effectiveLoc = locId !== null && itemLocs.includes(locId) ? locId : itemLocs[0] ?? null;
+  const locOnHand = item.locations ? (item.locations.find((l) => l.location_id === effectiveLoc)?.on_hand ?? 0) : item.on_hand;
   const noteMissing = t.note && note.trim().length < 3;
   const tooMany = delta < 0 && locOnHand !== null && locOnHand !== undefined && -delta > locOnHand;
 

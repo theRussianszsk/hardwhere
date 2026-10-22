@@ -273,7 +273,7 @@ function ReviewBody({ analysis, outboxId, photoRef, photo, onDone }: { analysis:
       {err != null && (
         <div className="space-y-2" aria-live="assertive">
           {code === "already_stocked" ? (
-            <Alert tone="warn"><strong>You already stock this product.</strong> Adding it again would duplicate it.{" "}
+            <Alert tone="warn"><strong>This store already stocks this product.</strong> Adding it again would duplicate it.{" "}
               {typeof apiErr!.details.inventory_item_id === "number" && <Link className="font-semibold underline" to={`/stock/${apiErr!.details.inventory_item_id}`}>Adjust its stock instead</Link>}</Alert>
           ) : code === "already_decided" ? (
             <Alert tone="warn"><strong>This photo was already reviewed.</strong> Nothing more was changed. Check your <Link className="font-semibold underline" to="/stock">stock list</Link>.
