@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Vision\MockVisionProvider;
+use App\Services\Vision\OpenAiCompatibleVisionProvider;
+use App\Services\Vision\ProductVisionProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +18,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(ProductVisionProvider::class, function (): ProductVisionProvider {
+            $config = config('services.vision');
+
+            return match ($config['driver']) {
+                'openai' => new OpenAiCompatibleVisionProvider(
+                    baseUrl: (string) $config['base_url'],
+                    apiKey: (string) $config['api_key'],
+                    model: (string) $config['model'],
+                    timeoutSeconds: (int) $config['timeout'],
+                ),
+                default => new MockVisionProvider,
+            };
+        });
     }
 
     /**
