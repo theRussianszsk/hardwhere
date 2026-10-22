@@ -17,6 +17,7 @@ use App\Models\TenantListing;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Support\World;
@@ -119,6 +120,19 @@ it('rejects duplicate barcodes when proposing a candidate', function () {
     $cat = Category::first()->id;
     $this->postJson('/api/v1/vendor/catalog/candidates', ['category_id' => $cat, 'name' => 'Clone', 'variants' => [['name' => 'Clone', 'barcodes' => ['4800000100017' => 'EAN13']]]], $this->h)
         ->assertStatus(409)->assertJsonPath('error.code', 'barcode_conflict');
+});
+
+it('creates a candidate with a 12-digit UPC and rejects unknown barcode types and duplicate barcodes on intake', function () {
+    $cat = Category::where('slug', 'building-supplies')->value('id');
+    $confirm = fn (array $barcodes, string $key) => $this->postJson('/api/v1/vendor/ai/analyses/'.($this->analyze)('unknown-product', null, $key)->json('data.id').'/confirm', ['decision' => 'created_candidate',
+        'new_product' => ['category_id' => $cat, 'name' => "Sealant $key", 'variants' => [['name' => "Sealant $key", 'barcodes' => $barcodes]]],
+        'inventory' => ($this->inventory)()], $this->h + idem("c-$key"));
+
+    $confirm(['012345678905' => 'UPCA'], 'a')->assertStatus(422)->assertJsonPath('error.fields', fn ($f) => isset($f['new_product.variants.0.barcodes.012345678905']));
+    $confirm(['012345678905' => 'UPC'], 'b')->assertCreated();
+    $confirm(['4800000100017' => 'EAN13'], 'c')->assertStatus(409)->assertJsonPath('error.code', 'barcode_conflict'); // seeded Stanley hammer
+    expect(InventoryItem::query()->forTenant($this->w['ctx'])->count())->toBe(1)
+        ->and(DB::table('product_barcodes')->where('code', '012345678905')->value('type'))->toBe('UPC');
 });
 
 it('lets a reviewer reject the suggestion without stocking anything', function () {

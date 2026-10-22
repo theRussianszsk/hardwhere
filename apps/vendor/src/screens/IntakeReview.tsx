@@ -20,7 +20,9 @@ interface Done { kind: "added" | "rejected"; inventoryItemId: number | null; nam
 
 const pretty = (f: string) => f.replace(/^attr:/, "").replace(/_/g, " ");
 const attrList = (a: Record<string, unknown> | undefined | null) => Object.entries(a ?? {}).map(([k, v]) => `${pretty(k)}: ${String(v)}`);
-const barcodeType = (c: string) => (/^\d{13}$/.test(c) ? "EAN13" : /^\d{12}$/.test(c) ? "UPCA" : /^\d{8}$/.test(c) ? "EAN8" : "CODE128");
+/** Barcode type by digit count. Must stay within the server's ProductBarcode::TYPES; the catalog only stores 8-14 digit codes. */
+const barcodeType = (c: string) => ({ 8: "EAN8", 12: "UPC", 13: "EAN13", 14: "GTIN14" } as Record<number, string>)[c.length] ?? "OTHER";
+const barcodeProblem = (c: string) => (c === "" || /^\d{8,14}$/.test(c) ? null : "A barcode is 8 to 14 digits. Leave it empty if you can't read it.");
 
 function initialDraft(a: AiAnalysisDto): IntakeDraft {
   const x = a.extracted;
@@ -128,7 +130,7 @@ function ReviewBody({ analysis, outboxId, photoRef, photo, onDone }: { analysis:
 
   const problems = invProblems(d.inv);
   const npProblems: string[] = [];
-  if (d.mode === "new") { if (d.np.categoryId === null) npProblems.push("category"); if (!d.np.name.trim()) npProblems.push("name"); }
+  if (d.mode === "new") { if (d.np.categoryId === null) npProblems.push("category"); if (!d.np.name.trim()) npProblems.push("name"); if (barcodeProblem(d.np.barcode)) npProblems.push("barcode"); }
   const canSubmit = d.mode === "reject" || (d.mode !== "none" && Object.keys(problems).length === 0 && npProblems.length === 0);
   const displayName = d.mode === "new" ? d.np.name || "this product" : chosen ? (chosen.variant?.name ?? chosen.product.name) : "this product";
 
@@ -255,7 +257,7 @@ function ReviewBody({ analysis, outboxId, photoRef, photo, onDone }: { analysis:
             <TextField label="Model" value={d.np.model} onChange={(e) => set({ np: { ...d.np, model: e.target.value } })} maxLength={80} />
           </div>
           <div className="space-y-1"><p className="text-sm font-medium text-slate-800">Pack quantity</p><QuantityStepper label="Pack quantity" value={d.np.pack} min={1} max={100000} onChange={(n) => set({ np: { ...d.np, pack: n } })} /></div>
-          <TextField label="Barcode (optional)" inputMode="numeric" value={d.np.barcode} onChange={(e) => set({ np: { ...d.np, barcode: e.target.value.replace(/\s/g, "") } })} hint="Only if you can read it on the package." />
+          <TextField label="Barcode (optional)" inputMode="numeric" value={d.np.barcode} onChange={(e) => set({ np: { ...d.np, barcode: e.target.value.replace(/\s/g, "") } })} error={barcodeProblem(d.np.barcode) ?? (code === "barcode_conflict" ? apiErr!.message : null)} hint="Only if you can read it on the package." />
         </Card>
       )}
 

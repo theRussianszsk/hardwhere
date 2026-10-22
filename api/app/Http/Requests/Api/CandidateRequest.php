@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\ProductBarcode;
+
 class CandidateRequest extends ApiRequest
 {
     /** @return array<string, mixed> */
@@ -21,6 +23,7 @@ class CandidateRequest extends ApiRequest
             'variants.*.pack_quantity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'variants.*.uom' => ['nullable', 'string', 'max:16'],
             'variants.*.barcodes' => ['nullable', 'array', 'max:5'],
+            'variants.*.barcodes.*' => ['string', 'in:'.implode(',', ProductBarcode::TYPES)],
         ];
     }
 }

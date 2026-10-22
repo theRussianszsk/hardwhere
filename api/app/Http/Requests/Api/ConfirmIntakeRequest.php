@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\ProductBarcode;
+
 class ConfirmIntakeRequest extends ApiRequest
 {
     /** @return array<string, mixed> */
@@ -24,6 +26,7 @@ class ConfirmIntakeRequest extends ApiRequest
             'new_product.variants.*.pack_quantity' => ['nullable', 'integer', 'min:1', 'max:100000'],
             'new_product.variants.*.uom' => ['nullable', 'string', 'max:16'],
             'new_product.variants.*.barcodes' => ['nullable', 'array', 'max:5'],
+            'new_product.variants.*.barcodes.*' => ['string', 'in:'.implode(',', ProductBarcode::TYPES)],
             'inventory' => ['required_unless:decision,rejected', 'array'],
             'inventory.tenant_sku' => ['required_with:inventory', 'string', 'max:64', 'regex:/^[A-Za-z0-9._\\-\\/]+$/'],
             'inventory.cost_cents' => ['required_with:inventory', 'integer', 'min:0', 'max:100000000'],
