@@ -64,7 +64,7 @@ class CatalogSeeder extends Seeder
                 ['DCD771-BARE', 'DeWalt DCD771 18V Cordless Drill Driver, tool only', 'DCD771N', ['voltage_v' => 18, 'kit' => 'bare tool'], 1, 'pc', $b('885911100772')]]],
             ['power-tools', 'Black+Decker', 'Cordless Drill BCD001', 'BCD001', ['cordless drill', 'drill driver'], [], [
                 ['BCD001-12V', 'Black+Decker BCD001 Cordless Drill 12V', 'BCD001', ['voltage_v' => 12], 1, 'pc', $b('885911200121')],
-                ['BCD001-20V', 'Black+Decker BCD001 Cordless Drill 20V', 'BCD001-20', ['voltage_v' => 20], 1, 'pc', $b('885911200201')]]],
+                ['BCD001-20V', 'Black+Decker BCD001 Cordless Drill 20V', 'BCD001', ['voltage_v' => 20], 1, 'pc', $b('885911200201')]]],
             ['power-tools', 'Makita', 'Jigsaw 4329', '4329', ['saw', 'jig saw'], [], [
                 ['MK4329', 'Makita 4329 Jigsaw 450W 220V', '4329', ['voltage_v' => 220, 'wattage_w' => 450], 1, 'pc', $b('088381100329')]]],
             ['hand-tools', 'Stanley', 'Claw Hammer 51-188', '51-188', ['martilyo', 'hammer'], [], [

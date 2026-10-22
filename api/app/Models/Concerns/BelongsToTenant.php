@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 
+/** @property int|null $tenant_id */
 trait BelongsToTenant
 {
     public static function bootBelongsToTenant(): void

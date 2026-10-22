@@ -15,7 +15,6 @@ use App\Models\TenantMembership;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\CatalogService;
-use App\Support\ApiException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

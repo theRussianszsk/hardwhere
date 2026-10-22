@@ -1,0 +1,164 @@
+{
+    "data": {
+        "id": 1,
+        "purpose": "intake",
+        "provider": "mock",
+        "model": "mock-fixtures-v1",
+        "is_mock": true,
+        "provider_label": "Demo AI (deterministic mock, not live inference)",
+        "extracted": {
+            "name": "Cordless drill",
+            "brand": "Black+Decker",
+            "model": "BCD001",
+            "part_number": null,
+            "category": "Power Tools",
+            "attributes": {
+                "voltage_v": 20
+            },
+            "pack_quantity": null,
+            "barcode_text": null,
+            "confidence": {
+                "name": 0.8,
+                "brand": 0.45,
+                "model": 0.5,
+                "category": 0.9,
+                "attributes": 0.6,
+                "barcode": 0
+            },
+            "overall_confidence": 0.62,
+            "image_sufficient": true,
+            "notes": [
+                "Demo AI (deterministic mock): not a live model result."
+            ]
+        },
+        "classification": "likely_same_product",
+        "overall_confidence": 0.62,
+        "requires_confirmation": true,
+        "warnings": [
+            "Low-confidence brand",
+            "Low-confidence model"
+        ],
+        "candidates": [
+            {
+                "rank": 1,
+                "classification": "likely_same_product",
+                "score": 0.995,
+                "matched_fields": [
+                    "brand",
+                    "model"
+                ],
+                "mismatched_fields": [],
+                "warnings": [],
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "brand": "Black+Decker",
+                    "manufacturer": "Black+Decker",
+                    "name": "Cordless Drill BCD001",
+                    "model_number": "BCD001",
+                    "product_type": null,
+                    "description": "Cordless Drill BCD001 — demo catalog entry.",
+                    "attributes": [],
+                    "compatibility": [],
+                    "included_components": [],
+                    "safety_info": "Wear eye and ear protection. Disconnect from power before changing accessories.",
+                    "warranty": "1 year manufacturer warranty",
+                    "ph_specs": {
+                        "plug": "Type A/B",
+                        "voltage": "220V 60Hz"
+                    },
+                    "synonyms": [
+                        "cordless drill",
+                        "drill driver"
+                    ],
+                    "status": "approved",
+                    "row_version": 1,
+                    "updated_at": "2026-01-01T00:00:00+00:00"
+                },
+                "variant": {
+                    "id": 1,
+                    "product_id": 1,
+                    "name": "Black+Decker BCD001 Cordless Drill 20V",
+                    "model_number": "BCD001",
+                    "part_number": null,
+                    "attributes": {
+                        "voltage_v": 20
+                    },
+                    "uom": "pc",
+                    "pack_quantity": 1,
+                    "is_default": false,
+                    "status": "approved",
+                    "barcodes": [
+                        {
+                            "code": "8859112002011",
+                            "type": "EAN13"
+                        }
+                    ]
+                }
+            },
+            {
+                "rank": 2,
+                "classification": "likely_variant",
+                "score": 0.79,
+                "matched_fields": [
+                    "brand",
+                    "model"
+                ],
+                "mismatched_fields": [
+                    "attr:voltage_v"
+                ],
+                "warnings": [
+                    "Similar product with different voltage",
+                    "Possible product variant"
+                ],
+                "product": {
+                    "id": 1,
+                    "category_id": 1,
+                    "brand": "Black+Decker",
+                    "manufacturer": "Black+Decker",
+                    "name": "Cordless Drill BCD001",
+                    "model_number": "BCD001",
+                    "product_type": null,
+                    "description": "Cordless Drill BCD001 — demo catalog entry.",
+                    "attributes": [],
+                    "compatibility": [],
+                    "included_components": [],
+                    "safety_info": "Wear eye and ear protection. Disconnect from power before changing accessories.",
+                    "warranty": "1 year manufacturer warranty",
+                    "ph_specs": {
+                        "plug": "Type A/B",
+                        "voltage": "220V 60Hz"
+                    },
+                    "synonyms": [
+                        "cordless drill",
+                        "drill driver"
+                    ],
+                    "status": "approved",
+                    "row_version": 1,
+                    "updated_at": "2026-01-01T00:00:00+00:00"
+                },
+                "variant": {
+                    "id": 1,
+                    "product_id": 1,
+                    "name": "Black+Decker BCD001 Cordless Drill 12V",
+                    "model_number": "BCD001",
+                    "part_number": null,
+                    "attributes": {
+                        "voltage_v": 12
+                    },
+                    "uom": "pc",
+                    "pack_quantity": 1,
+                    "is_default": true,
+                    "status": "approved",
+                    "barcodes": [
+                        {
+                            "code": "8859112001212",
+                            "type": "EAN13"
+                        }
+                    ]
+                }
+            }
+        ],
+        "created_at": "2026-01-01T00:00:00+00:00"
+    }
+}

@@ -13,11 +13,13 @@ use App\Http\Resources\LedgerEntryResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\PurchaseReceiptResource;
 use App\Http\Resources\VariantResource;
+use App\Models\Category;
 use App\Models\InventoryItem;
 use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductVariant;
+use App\Models\PurchaseReceipt;
 use App\Models\StockLedgerEntry;
 use App\Services\CatalogService;
 use App\Services\Idempotency;
@@ -100,7 +102,7 @@ class InventoryController extends Controller
     {
         $ctx = $this->ctx();
         $d = $request->validated();
-        [$receipt, $replayed] = $this->idempotency->run("t{$ctx->tenantId}", $this->idempotencyKey($request), 'purchase.receive', Idempotency::hash($d), \App\Models\PurchaseReceipt::class,
+        [$receipt, $replayed] = $this->idempotency->run("t{$ctx->tenantId}", $this->idempotencyKey($request), 'purchase.receive', Idempotency::hash($d), PurchaseReceipt::class,
             fn () => $this->inventory->receivePurchase($ctx, $d));
 
         return (new PurchaseReceiptResource($receipt))->additional(['replayed' => $replayed])->response()->setStatusCode($replayed ? 200 : 201);
@@ -131,7 +133,7 @@ class InventoryController extends Controller
 
     public function categories(): JsonResponse
     {
-        return response()->json(['data' => \App\Models\Category::query()->orderBy('sort')->get(['id', 'parent_id', 'slug', 'name'])]);
+        return response()->json(['data' => Category::query()->orderBy('sort')->get(['id', 'parent_id', 'slug', 'name'])]);
     }
 
     /** Tenant-proposed product. Stays a private 'candidate' until a platform admin approves it into the shared catalog. */

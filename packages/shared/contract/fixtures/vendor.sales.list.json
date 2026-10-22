@@ -1,0 +1,113 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "receipt_no": "REC-000001",
+            "store_id": 1,
+            "status": "completed",
+            "cashier_id": 1,
+            "subtotal_cents": 112300,
+            "discount_cents": 0,
+            "vat_cents": 12033,
+            "total_cents": 112300,
+            "payment_method": "cash",
+            "payment_reference": null,
+            "tendered_cents": 200000,
+            "change_cents": 87700,
+            "customer_name": null,
+            "customer_phone": null,
+            "completed_at": "2026-01-01T00:00:00+00:00",
+            "voided_at": null,
+            "void_reason": null,
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-HMR-016",
+                    "name": "Stanley 51-188 Claw Hammer 16oz",
+                    "quantity": 2,
+                    "unit_price_cents": 34900,
+                    "discount_cents": 0,
+                    "vat_cents": 7479,
+                    "line_total_cents": 69800,
+                    "returned_quantity": 0
+                },
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-NL-3",
+                    "name": "Common wire nail 3\" (per kg)",
+                    "quantity": 5,
+                    "unit_price_cents": 8500,
+                    "discount_cents": 0,
+                    "vat_cents": 4554,
+                    "line_total_cents": 42500,
+                    "returned_quantity": 0
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "receipt_no": "REC-000001",
+            "store_id": 1,
+            "status": "completed",
+            "cashier_id": 1,
+            "subtotal_cents": 38000,
+            "discount_cents": 0,
+            "vat_cents": 4071,
+            "total_cents": 38000,
+            "payment_method": "gcash",
+            "payment_reference": "GC1234567890",
+            "tendered_cents": null,
+            "change_cents": 0,
+            "customer_name": "Walk-in",
+            "customer_phone": null,
+            "completed_at": "2026-01-01T00:00:00+00:00",
+            "voided_at": null,
+            "void_reason": null,
+            "items": [
+                {
+                    "id": 1,
+                    "listing_id": 1,
+                    "sku": "DCH-LED-9W",
+                    "name": "Philips LED bulb 9W E27 warm white",
+                    "quantity": 4,
+                    "unit_price_cents": 9500,
+                    "discount_cents": 0,
+                    "vat_cents": 4071,
+                    "line_total_cents": 38000,
+                    "returned_quantity": 0
+                }
+            ]
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/sales?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/sales?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/sales?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/sales",
+        "per_page": 25,
+        "to": 3,
+        "total": 3
+    }
+}

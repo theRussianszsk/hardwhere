@@ -1,0 +1,68 @@
+{
+    "entity": "store",
+    "items": [
+        {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Kamuning Branch",
+            "address_line": "45 K-1st St, Kamuning",
+            "barangay": null,
+            "city": "Quezon City",
+            "province": "Metro Manila",
+            "postal_code": null,
+            "lat": 14.6285,
+            "lng": 121.0366,
+            "phone": "+6328123001",
+            "email": "dch-qc@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Antipolo Branch",
+            "address_line": "12 Sumulong Hwy, San Roque",
+            "barangay": null,
+            "city": "Antipolo",
+            "province": "Rizal",
+            "postal_code": null,
+            "lat": 14.586,
+            "lng": 121.176,
+            "phone": "+6328123002",
+            "email": "dch-an@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": false,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.586,121.176",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

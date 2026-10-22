@@ -9,3 +9,6 @@ Schedule::call(function () {
         ->where('expires_at', '<', now())
         ->delete();
 })->daily()->description('Delete expired team invitations');
+
+// Release stock held by marketplace reservations that were never collected. Overdue ones are also released lazily at checkout.
+Schedule::command('reservations:expire')->everyMinute()->withoutOverlapping();

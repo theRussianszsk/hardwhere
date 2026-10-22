@@ -26,6 +26,7 @@ use App\Services\SyncRecorder;
 use App\Support\ApiException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 class TenantAdminController extends Controller
@@ -52,7 +53,7 @@ class TenantAdminController extends Controller
         ]]);
     }
 
-    public function stores(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function stores(): AnonymousResourceCollection
     {
         $ctx = $this->ctx();
 
@@ -167,7 +168,7 @@ class TenantAdminController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function suppliers(): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    public function suppliers(): AnonymousResourceCollection
     {
         return SupplierResource::collection(Supplier::query()->forTenant($this->ctx())->orderBy('name')->get());
     }

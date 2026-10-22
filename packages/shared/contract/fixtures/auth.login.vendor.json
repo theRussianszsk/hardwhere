@@ -1,0 +1,23 @@
+{
+    "token": "TOKEN",
+    "expires_at": "2026-01-01T00:00:00+00:00",
+    "user": {
+        "id": 1,
+        "name": "Lito Dela Cruz",
+        "email": "owner.a@hardwhere.test",
+        "phone": null
+    },
+    "app": "vendor",
+    "tenant": {
+        "id": 1,
+        "slug": "dela-cruz-hardware",
+        "name": "Dela Cruz Hardware",
+        "vat_rate_bps": 1200
+    },
+    "role": "owner",
+    "permissions": [
+        "stores.view",
+        "stores.manage"
+    ],
+    "store_id": null
+}

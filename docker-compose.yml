@@ -17,7 +17,8 @@ services:
   api:
     build: ./docker/php
     working_dir: /app
-    volumes: ["./api:/app"]
+    # ./packages is mounted so the contract tests can write JSON fixtures that the mobile apps type-check against
+    volumes: ["./api:/app", "./packages:/packages"]
     environment:
       DB_CONNECTION: pgsql
       DB_HOST: postgres

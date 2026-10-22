@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AuditLogger
 {
-    /** @param  array<string, mixed>  $metadata */
+    /** @param  array<mixed>  $metadata */
     public function record(string $action, TenantContext|int|null $tenant, ?Model $subject = null, array $metadata = [], ?int $actorId = null): void
     {
         AuditEvent::create([

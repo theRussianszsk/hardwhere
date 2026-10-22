@@ -4,7 +4,9 @@ use App\Enums\TenantRole;
 use App\Models\Sale;
 use App\Models\StockLedgerEntry;
 use App\Models\StockSnapshot;
+use App\Services\InventoryService;
 use App\Services\Vat;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\World;
 
 beforeEach(function () {
@@ -49,7 +51,7 @@ it('reports price conflicts instead of silently using a stale price', function (
 });
 
 it('uses the sale price when one is set', function () {
-    app(\App\Services\InventoryService::class)->updateListing($this->w['ctx'], $this->a['listing']->id, ['sale_price_cents' => 30000]);
+    app(InventoryService::class)->updateListing($this->w['ctx'], $this->a['listing']->id, ['sale_price_cents' => 30000]);
     $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($this->a, 1)]), $this->cashier + idem())->assertCreated()->assertJsonPath('data.total_cents', 30000);
 });
 
@@ -59,7 +61,7 @@ it('validates payment: cash tender, references for non-cash, and never accepts c
     $post(['method' => 'gcash'])->assertStatus(422)->assertJsonPath('error.fields', fn ($f) => isset($f['payment.reference']));
     $post(['method' => 'card', 'reference' => '4111 1111 1111 1111'])->assertStatus(422)->assertJsonPath('error.fields', fn ($f) => isset($f['payment.reference']));
     $post(['method' => 'card', 'reference' => 'SLIP-884213'])->assertCreated()->assertJsonPath('data.payment_reference', 'SLIP-884213');
-    expect(\Illuminate\Support\Facades\DB::table('sales')->where('payment_reference', 'like', '4111%')->count())->toBe(0);
+    expect(DB::table('sales')->where('payment_reference', 'like', '4111%')->count())->toBe(0);
 });
 
 it('has exactly-once effect when a checkout is retried, and rejects key reuse with a different cart', function () {

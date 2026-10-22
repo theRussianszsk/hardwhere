@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Api;
 
-
 class StaffRequest extends ApiRequest
 {
     /** @return array<string, mixed> */

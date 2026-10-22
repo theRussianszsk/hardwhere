@@ -1,0 +1,73 @@
+{
+    "data": {
+        "id": 1,
+        "product_id": 1,
+        "variant_id": 1,
+        "title": "Stanley 51-188 Claw Hammer 16oz",
+        "description": null,
+        "sku": "DCH-HMR-016",
+        "price_cents": 34900,
+        "sale_price_cents": null,
+        "currency": "PHP",
+        "uom": "pc",
+        "availability": {
+            "status": "in_stock",
+            "quantity": null
+        },
+        "pickup_available": true,
+        "delivery_available": true,
+        "min_order_qty": 1,
+        "max_order_qty": null,
+        "lead_time_hours": 0,
+        "store": {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Kamuning Branch",
+            "address_line": "45 K-1st St, Kamuning",
+            "barangay": null,
+            "city": "Quezon City",
+            "province": "Metro Manila",
+            "postal_code": null,
+            "lat": 14.6285,
+            "lng": 121.0366,
+            "phone": "+6328123001",
+            "email": "dch-qc@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        "variant": {
+            "id": 1,
+            "product_id": 1,
+            "name": "Stanley 51-188 Claw Hammer 16oz",
+            "model_number": "51-188",
+            "part_number": null,
+            "attributes": {
+                "weight_oz": 16
+            },
+            "uom": "pc",
+            "pack_quantity": 1,
+            "is_default": true,
+            "status": "approved",
+            "barcodes": [
+                {
+                    "code": "4800000100017",
+                    "type": "EAN13"
+                }
+            ]
+        },
+        "row_version": 2,
+        "updated_at": "2026-01-01T00:00:00+00:00"
+    }
+}

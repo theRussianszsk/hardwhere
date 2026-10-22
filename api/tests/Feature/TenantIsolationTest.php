@@ -3,7 +3,6 @@
 use App\Enums\TenantRole;
 use App\Models\InventoryItem;
 use App\Models\InventoryLocation;
-use App\Models\Sale;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

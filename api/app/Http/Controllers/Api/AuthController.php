@@ -59,6 +59,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $token = $request->user()->currentAccessToken();
+        $token instanceof PersonalAccessToken || throw new ApiException('unauthenticated', 'Sign in again.', 401);
 
         return response()->json(['user' => $this->userPayload($request->user())] + $this->scopePayload($token));
     }
@@ -67,6 +68,7 @@ class AuthController extends Controller
     public function renew(Request $request): JsonResponse
     {
         $old = $request->user()->currentAccessToken();
+        $old instanceof PersonalAccessToken || throw new ApiException('unauthenticated', 'Sign in again.', 401);
         $app = match (true) {
             $old->can('vendor') => 'vendor', $old->can('platform') => 'admin', default => 'customer',
         };

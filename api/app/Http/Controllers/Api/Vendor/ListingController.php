@@ -9,6 +9,7 @@ use App\Http\Resources\TenantListingResource;
 use App\Models\TenantListing;
 use App\Services\InventoryService;
 use App\Services\StockService;
+use App\Support\Text;
 use Illuminate\Http\Request;
 
 class ListingController extends Controller
@@ -25,7 +26,7 @@ class ListingController extends Controller
             ->when($request->query('store_id'), fn ($w, $id) => $w->where('tenant_listings.store_id', $id))
             ->when($request->query('status'), fn ($w, $s) => $w->where('publication_status', $s))
             ->when($request->query('q'), fn ($w, $t) => $w->whereRaw('lower(tenant_listings.tenant_sku) LIKE ?', [mb_strtolower($t).'%'])
-                ->orWhereHas('product', fn ($p) => $p->whereRaw('products.search_text ILIKE ?', ['%'.\App\Support\Text::normalize($t).'%'])))
+                ->orWhereHas('product', fn ($p) => $p->whereRaw('products.search_text ILIKE ?', ['%'.Text::normalize($t).'%'])))
             ->orderBy('tenant_listings.tenant_sku');
 
         return TenantListingResource::collection($q->paginate($this->perPage($request)));
