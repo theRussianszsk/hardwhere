@@ -8,13 +8,19 @@ return [
     ],
 
     'ai' => [
-        // "mock" = deterministic, clearly labelled demo provider. "gemma" = Gemma 4 through the Gemini API (generateContent).
+        // "mock" = deterministic, clearly labelled demo provider. "gemma" = Gemma 4 through the Gemini API, "openrouter" = any vision model via OpenRouter.
         'provider' => env('AI_PROVIDER', 'mock'),
         'gemma' => [
             'base_url' => env('GEMMA_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
             'api_key' => env('GEMMA_API_KEY'),
             'model' => env('GEMMA_MODEL', 'gemma-4-26b-a4b-it'),
             'timeout' => (int) env('GEMMA_TIMEOUT', 45),
+        ],
+        'openrouter' => [
+            'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+            'api_key' => env('OPENROUTER_API_KEY', env('OPEN_ROUTER_API')),
+            'model' => env('OPENROUTER_MODEL', 'google/gemma-4-26b-a4b-it'),
+            'timeout' => (int) env('OPENROUTER_TIMEOUT', 60),
         ],
         'max_image_kb' => (int) env('AI_MAX_IMAGE_KB', 8192),
         'max_image_edge' => 1600,
