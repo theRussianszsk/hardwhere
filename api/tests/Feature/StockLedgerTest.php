@@ -91,3 +91,17 @@ it('receives purchases into stock and updates the item cost', function () {
     expect(StockSnapshot::query()->forTenant($this->w['ctx'])->sole()->on_hand)->toBe(15)
         ->and($this->s['item']->fresh()->cost_cents)->toBe(21000);
 });
+
+it('replays a retried manual add-to-stock instead of reporting the stock it added as already stocked', function () {
+    $h = World::login($this, 'owner@alpha.test', 'vendor', 'alpha');
+    $body = ['variant_id' => $this->refs['NAIL3'], 'tenant_sku' => 'NAIL-3', 'cost_cents' => 5000, 'price_cents' => 8500, 'quantity' => 6, 'reorder_threshold' => 1, 'store_id' => $this->w['store']->id];
+    $this->postJson('/api/v1/vendor/inventory', $body, $h)->assertStatus(422)->assertJsonPath('error.code', 'idempotency_key_required');
+
+    $first = $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-1'))->assertCreated()->assertJsonPath('replayed', false);
+    $again = $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-1'))->assertOk()->assertJsonPath('replayed', true)->assertJsonPath('data.on_hand', 6);
+    expect($again->json('data.id'))->toBe($first->json('data.id'))->and($again->json('data.sku'))->toBe('NAIL-3');
+    expect(StockLedgerEntry::query()->forTenant($this->w['ctx'])->where('inventory_item_id', $first->json('data.id'))->count())->toBe(1);
+
+    $this->postJson('/api/v1/vendor/inventory', ['quantity' => 7] + $body, $h + idem('add-1'))->assertStatus(409)->assertJsonPath('error.code', 'idempotency_key_reused');
+    $this->postJson('/api/v1/vendor/inventory', $body, $h + idem('add-2'))->assertStatus(409)->assertJsonPath('error.code', 'already_stocked'); // a genuinely new request still is
+});
