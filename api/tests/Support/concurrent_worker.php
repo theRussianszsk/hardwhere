@@ -20,6 +20,9 @@ try {
         $ctx = new TenantContext($p['tenant'], $p['user'], TenantRole::Owner);
         [$sale, $replayed] = app(PosService::class)->checkout($ctx, $p['data'], $p['key']);
         $out = ['ok' => true, 'id' => $sale->id, 'replayed' => $replayed];
+    } elseif ($p['kind'] === 'session') {
+        $ctx = new TenantContext($p['tenant'], $p['user'], TenantRole::Owner);
+        $out = ['ok' => true, 'id' => app(PosService::class)->openSession($ctx, $p['register'], 0)->id];
     } else {
         [$order, $replayed] = app(OrderService::class)->place(User::findOrFail($p['user']), $p['data'], $p['key']);
         $out = ['ok' => true, 'id' => $order->id, 'replayed' => $replayed];

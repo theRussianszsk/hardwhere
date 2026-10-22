@@ -110,6 +110,18 @@ it('lets cashiers see only their own sales and tracks register sessions', functi
     $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($this->a, 1)], ['method' => 'cash', 'tendered_cents' => 99999], ['pos_session_id' => $session]), $this->cashier + idem())->assertStatus(422)->assertJsonPath('error.code', 'session_closed');
 });
 
+it('opens at most one session per register, and the register can be reopened once closed', function () {
+    $open = fn (int $float = 0) => $this->postJson('/api/v1/vendor/pos/sessions', ['register_id' => $this->w['register']->id, 'opening_float_cents' => $float], $this->cashier);
+    $first = $open(50000)->assertCreated()->assertJsonPath('data.register_id', $this->w['register']->id)->assertJsonPath('data.opening_float_cents', 50000)->json('data.id');
+    $open()->assertStatus(409)->assertJsonPath('error.code', 'session_open');
+    expect(DB::table('pos_sessions')->whereNull('closed_at')->count())->toBe(1);
+
+    $this->postJson("/api/v1/vendor/pos/sessions/$first/close", ['closing_cash_cents' => 50000], $this->cashier)->assertOk();
+    expect($open()->assertCreated()->json('data.id'))->not->toBe($first);
+    $other = World::tenant('beta');
+    $this->postJson('/api/v1/vendor/pos/sessions', ['register_id' => $other['register']->id], $this->cashier)->assertNotFound();
+});
+
 it('lets POS sell items that are not yet published online', function () {
     $draft = World::stocked($this->w, $this->refs['TAPE5'], 5, 23500, publish: false);
     $this->postJson('/api/v1/vendor/pos/checkout', ($this->cart)([($this->line)($draft, 1)]), $this->cashier + idem())->assertCreated();

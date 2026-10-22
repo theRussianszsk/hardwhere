@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\InventoryItem;
+use App\Models\PosRegister;
 use App\Models\PosSession;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -23,6 +24,26 @@ class PosService
         private SyncRecorder $sync,
         private AuditLogger $audit,
     ) {}
+
+    /**
+     * One open session per register, enforced by the partial unique index pos_sessions_one_open_uq. A check-then-insert let two
+     * simultaneous opens both pass the check and the loser hit the index as a 500; ON CONFLICT DO NOTHING turns it into a clean 409
+     * (and, unlike catching the violation, never aborts a surrounding PostgreSQL transaction).
+     */
+    public function openSession(TenantContext $ctx, int $registerId, int $openingFloatCents): PosSession
+    {
+        $register = PosRegister::query()->forTenant($ctx)->findOrFail($registerId);
+        $ctx->assertStore($register->store_id);
+        $now = now();
+        $row = DB::selectOne(
+            'INSERT INTO pos_sessions (tenant_id, register_id, opened_by, opened_at, opening_float_cents, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (register_id) WHERE closed_at IS NULL DO NOTHING RETURNING id',
+            [$ctx->tenantId, $register->id, $ctx->userId, $now, $openingFloatCents, $now, $now],
+        );
+        $row !== null || throw ApiException::conflict('session_open', 'This register already has an open session.');
+
+        return PosSession::query()->forTenant($ctx)->findOrFail($row->id);
+    }
 
     /**
      * @param  array<string, mixed>  $data  validated by CheckoutRequest
