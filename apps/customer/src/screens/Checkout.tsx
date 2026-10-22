@@ -4,6 +4,7 @@ import {
   COMMAND, formatPeso, newId, normalizePhMobile, useActive, useAuth, useOutbox,
   type FulfillmentType, type OrderDto, type OrderPlacePayload, type OrderStockConflictDetails, type PlaceOrderInput,
 } from "@hardwhere/shared";
+import type { OutboxItem } from "@hardwhere/shared";
 import { useCart } from "../cart";
 import { Btn, Card, ConfirmDialog, EmptyState, FormField, LoadingState, Money, Notice, StatusPill, cx, inputCls } from "../components/ui";
 import { useOnline } from "../hooks";
@@ -160,6 +161,8 @@ export function CheckoutScreen() {
 
 // ───────────────────────── attempt status ─────────────────────────
 const CONFLICT = new Set(["stock_unavailable", "price_changed", "listing_unavailable", "quantity_out_of_range", "mixed_stores", "fulfillment_unsupported", "delivery_unsupported", "pickup_unsupported"]);
+/** The server definitely did not place this order (rejected, or a 409 that is a business answer rather than an unknown outcome). */
+export const attemptFailed = (a: Pick<OutboxItem, "state" | "lastError">) => a.state === "rejected" || (a.state === "needs_review" && !!a.lastError && CONFLICT.has(a.lastError.code));
 
 export function AttemptScreen() {
   const id = useParams().id!;
@@ -192,7 +195,7 @@ export function AttemptScreen() {
 
   const err = item.lastError;
   const details = (err?.details ?? {}) as Record<string, unknown>;
-  const definite = item.state === "rejected" || (item.state === "needs_review" && !!err && CONFLICT.has(err.code));
+  const definite = attemptFailed(item);
   const inFlight = item.state === "draft" || item.state === "queued" || item.state === "sending";
   const storeId = cart.lines.find((l) => payload?.input.items.some((i) => i.listing_id === l.listing_id))?.snap.store?.id;
 
@@ -238,12 +241,12 @@ export function AttemptScreen() {
         {order ? (
           <Card className="space-y-2 border-success bg-success-soft">
             <div className="flex items-center gap-2"><StatusPill status={order.status} /><span className="text-sm font-bold">Order {order.order_no}</span></div>
-            <p className="text-sm text-success-ink">The store confirmed your reservation. Taking you to your order…</p>
+            <p className="text-sm text-success-ink">{order.status === "reserved" ? "Reserved — waiting for the store to confirm." : order.status === "pending" ? "Order received — waiting for the store to confirm." : "The store confirmed your order."} Taking you to your order…</p>
             <Btn block onClick={() => nav(`/orders/${order.id}`, { replace: true })}>View order</Btn>
           </Card>
         ) : inFlight ? (
           <Card className="space-y-2">
-            <div className="flex items-center gap-2"><StatusPill status="sending" /><span className="text-sm">Waiting for the store to confirm…</span></div>
+            <div className="flex items-center gap-2"><StatusPill status="sending" /><span className="text-sm">Sending your order…</span></div>
             <p className="text-xs text-ink-muted">Not reserved yet. Keep this screen open{!online ? " — you're offline, so it will send when the connection returns" : ""}{auth.status === "expired" ? " — sign in again to send it" : ""}.</p>
           </Card>
         ) : definite ? (
