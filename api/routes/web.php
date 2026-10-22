@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Catalog\ProductImageAnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -12,9 +11,6 @@ Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
-        Route::post('catalog/analyze-image', ProductImageAnalysisController::class)
-            ->middleware('throttle:20,1')
-            ->name('catalog.analyze-image');
     });
 
 Route::middleware(['auth'])->group(function () {

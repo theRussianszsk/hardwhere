@@ -44,7 +44,8 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/** Idempotency-Key header for mutating API calls. */
+function idem(string $seed = ''): array
 {
-    // ..
+    return ['Idempotency-Key' => 'test-key-'.($seed ?: bin2hex(random_bytes(6)))];
 }

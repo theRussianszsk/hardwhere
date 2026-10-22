@@ -28,15 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // Product photo recognition. "mock" is deterministic demo output, not real inference.
-    'vision' => [
-        'driver' => env('VISION_DRIVER', 'mock'),
-        'base_url' => env('VISION_BASE_URL', 'https://openrouter.ai/api/v1'),
-        'api_key' => env('VISION_API_KEY'),
-        'model' => env('VISION_MODEL'),
-        'timeout' => (int) env('VISION_TIMEOUT', 30),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
