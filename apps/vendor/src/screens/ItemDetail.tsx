@@ -198,7 +198,7 @@ function ListingEditor({ item }: { item: InventoryItemDto }) {
       {q.loading && !q.data ? <LoadingState label="Loading listing…" />
         : q.error && !q.data ? <Alert tone="warn">{online ? q.message : "Price and publishing need a connection."} <button type="button" className="font-semibold underline" onClick={() => void q.refetch()}>Try again</button></Alert>
         : mine.length === 0 ? <EmptyState title="No marketplace listing for this item yet" />
-        : mine.map((l) => <ListingForm key={`${l.id}-${l.row_version}`} listing={l} canEdit={can("listings.manage")} canPrice={can("prices.manage")} onSaved={() => q.refetch()} />)}
+        : mine.map((l) => <ListingForm key={l.id} listing={l} canEdit={can("listings.manage")} canPrice={can("prices.manage")} onSaved={() => q.refetch()} />)}
     </section>
   );
 }
@@ -212,6 +212,12 @@ function ListingForm({ listing, canEdit, canPrice, onSaved }: { listing: TenantL
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: "success" | "error" | "warn"; text: string } | null>(null);
   const [errObj, setErrObj] = useState<unknown>(null);
+
+  // A refetch after saving (or after a version conflict) brings a new row_version: load its values into the form but keep the
+  // form mounted, so the "Saved" / "someone else changed it" message survives the reload.
+  useEffect(() => {
+    setPrice(listing.price_cents); setSale(listing.sale_price_cents); setPublish(listing.publication_status === "published");
+  }, [listing.row_version, listing.price_cents, listing.sale_price_cents, listing.publication_status]);
 
   const dirty = price !== listing.price_cents || sale !== listing.sale_price_cents || publish !== (listing.publication_status === "published");
   const save = async () => {
