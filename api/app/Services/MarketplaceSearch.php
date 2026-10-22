@@ -7,6 +7,7 @@ use App\Models\TenantListing;
 use App\Support\Text;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -52,7 +53,7 @@ class MarketplaceSearch
 
         if ($text !== '') {
             $tokens = explode(' ', $text);
-            $query->where(function ($w) use ($text, $tokens, $key) {
+            $query->where(function ($w) use ($f, $text, $tokens, $key) {
                 $w->where(function ($all) use ($tokens) {
                     foreach ($tokens as $t) {
                         $all->whereRaw('products.search_text ILIKE ?', ['%'.$t.'%']);
@@ -94,7 +95,7 @@ class MarketplaceSearch
     /**
      * Every live listing of a product, joined with store and availability, optionally ordered by distance — the store comparison view.
      *
-     * @return \Illuminate\Support\Collection<int, TenantListing>
+     * @return Collection<int, TenantListing>
      */
     public function listingsForProduct(int $productId, ?float $lat = null, ?float $lng = null)
     {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Api;
 
-
 class PurchaseReceiptRequest extends ApiRequest
 {
     /** @return array<string, mixed> */

@@ -1,0 +1,41 @@
+{
+  "name": "@hardwhere/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Frontend-safe code shared by both mobile apps: API DTO types + client, SQLite port/migrations/outbox/sync, formatters, UI components.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./styles.css": "./src/ui/styles.css",
+    "./contract/endpoints.json": "./contract/endpoints.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
+    "@capacitor-community/sqlite": "^8.1.1",
+    "@capacitor-mlkit/barcode-scanning": "^8.2.1",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/camera": "^8.2.6",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/geolocation": "^8.2.4",
+    "@capacitor/network": "^8.0.1",
+    "flowbite-react": "^0.12.17",
+    "jeep-sqlite": "^2.8.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0"
+  }
+}

@@ -1,0 +1,136 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BIT-5",
+            "title": "Bosch drill bit set 5-piece (4-8mm)",
+            "title_override": null,
+            "description": null,
+            "price_cents": 59000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "set",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 9,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch drill bit set 5-piece (4-8mm)",
+                "model_number": null,
+                "part_number": null,
+                "attributes": {},
+                "uom": "set",
+                "pack_quantity": 5,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921000559",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Drill Bit Set 5-piece",
+                "brand": "Bosch",
+                "category": "Accessories & Parts"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-BLT-M10",
+            "title": "Hex bolt M10 x 50mm zinc, pack of 50",
+            "title_override": null,
+            "description": null,
+            "price_cents": 54000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pack",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 3,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Hex bolt M10 x 50mm zinc, pack of 50",
+                "model_number": null,
+                "part_number": null,
+                "attributes": {
+                    "material": "zinc",
+                    "length_mm": 50,
+                    "thread_size": "M10"
+                },
+                "uom": "pack",
+                "pack_quantity": 50,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": []
+            },
+            "product": {
+                "id": 1,
+                "name": "Hex Bolt M10 x 50 zinc",
+                "brand": null,
+                "category": "Fasteners"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/listings?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/listings?page=8",
+        "prev": null,
+        "next": "http://localhost:8000/api/v1/vendor/listings?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 8,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/listings?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/listings",
+        "per_page": 3,
+        "to": 3,
+        "total": 22
+    }
+}

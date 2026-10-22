@@ -40,11 +40,13 @@ services:
   api:
     build: ./docker/php
     working_dir: /app
-    volumes: ["./api:/app"]
+    # ./packages is mounted so the contract tests can write JSON fixtures that the mobile apps type-check against
+    volumes: ["./api:/app", "./packages:/packages"]
     environment:
       <<: *api-env
       PHP_CLI_SERVER_WORKERS: "8"
-    command: php artisan serve --host=0.0.0.0 --port=8787
+    # Not `artisan serve`: it strips env vars that also appear in .env, which would silently switch the DB back to SQLite.
+    command: ["sh", "-c", "cd public && exec php -S 0.0.0.0:8787 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
     ports: ["8787:8787"]
     depends_on:
       postgres: { condition: service_healthy }

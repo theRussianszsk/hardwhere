@@ -15,7 +15,7 @@
 - Contract: PHP feature tests write real JSON to `packages/shared/contract/fixtures`; TS type-checks them with `satisfies`. `endpoints.json` is checked against the router.
 - Photo search for customers requires a signed-in customer (AI cost control); text search is anonymous.
 - Demand alerts: every customer text/photo search leaves a `demand_signals` row (salted searcher hash, never raw IP/user). `demand:detect` (scheduled every 5 min) alerts when >= `DEMAND_MIN_SEARCHERS` distinct shoppers searched the same subject inside `DEMAND_WINDOW_HOURS`, then emails member owners/inventory managers (prepare stock) and matching, subscribed `prospect_vendors` (non-members: invite to join). Cooldown `DEMAND_COOLDOWN_HOURS` per subject. Emails carry counts only.
-- Local mail: Mailpit in docker compose (UI http://localhost:8025, SMTP 1025). `migrate:fresh --seed` runs `DemandDemoSeeder`, which fills the inbox for member and non-member vendors. `php artisan demand:simulate "<query>" --searchers=6 --detect` triggers more. `artisan serve` re-reads `.env` in its workers, so HTTP-triggered mail uses `.env` MAIL_* (compose env only reaches CLI/scheduler).
+- Local mail: Mailpit in docker compose (UI http://localhost:8025, SMTP 1025). `migrate:fresh --seed` runs `DemandDemoSeeder`, which fills the inbox for member and non-member vendors. `php artisan demand:simulate "<query>" --searchers=6 --detect` triggers more.
 
 ## Status
 - [x] Migrations, models, services, controllers, routes (72), seeders (verified: ledger == snapshots)
@@ -25,3 +25,10 @@
 
 ## Not verifiable on this machine
 No JDK/Android SDK/Xcode: APK/AAB and iOS builds are NOT built here. Gemma 4 live inference not run (no API key).
+
+## Update — mobile workspace milestone
+- npm workspaces (`apps/vendor`, `apps/customer`, `packages/shared`); `.npmrc` sets `legacy-peer-deps` because npm's resolver crashes on this peer graph.
+- Shared contract: `contract/endpoints.json` (65 endpoints, checked against the Laravel router both ways) + 44 real-response fixtures type-checked by `contract/check.ts` (`tsc` fails on server/client drift; verified with a negative test).
+- Capacitor Android + iOS (SPM) projects generated for both apps with distinct ids (`ph.hardwhere.vendor`, `ph.hardwhere.market`), 8 native plugins registered. **Never built or run**: no JDK/Android SDK/Xcode on this machine. Demo target is the browser at a phone viewport.
+- `GET /` on the API now returns a JSON descriptor instead of a 500 when the starter's Vite bundle is not built.
+- In progress (not in this commit): src/db, src/sync (SQLite + sync + outbox), src/session, src/platform, src/ui, src/react.

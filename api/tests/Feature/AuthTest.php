@@ -3,6 +3,7 @@
 use App\Enums\TenantRole;
 use App\Models\PersonalAccessToken;
 use App\Models\TenantMembership;
+use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\Support\World;
 
@@ -86,7 +87,7 @@ it('registers customers with strong-password rules and lets only platform admins
     $this->postJson('/api/v1/auth/register', ['name' => 'N', 'email' => 'new@test.test', 'password' => 'password'])->assertCreated()->assertJsonPath('app', 'customer');
     $this->postJson('/api/v1/auth/register', ['name' => 'N', 'email' => 'new@test.test', 'password' => 'password'])->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
 
-    $admin = \App\Models\User::query()->forceCreate(['name' => 'Admin', 'email' => 'admin@test.test', 'password' => bcrypt('password'), 'is_platform_admin' => true]);
+    $admin = User::query()->forceCreate(['name' => 'Admin', 'email' => 'admin@test.test', 'password' => bcrypt('password'), 'is_platform_admin' => true]);
     $h = World::login($this, 'admin@test.test', 'admin');
     $this->getJson('/api/v1/admin/health', $h)->assertOk()->assertJsonPath('data.database', 'ok');
     $this->getJson('/api/v1/admin/health', World::login($this, 'owner@alpha.test'))->assertForbidden();

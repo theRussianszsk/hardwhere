@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "vendor-app", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "-w", "@hardwhere/vendor"], "port": 5173 },
+    { "name": "customer-app", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "-w", "@hardwhere/customer"], "port": 5174 }
+  ]
+}

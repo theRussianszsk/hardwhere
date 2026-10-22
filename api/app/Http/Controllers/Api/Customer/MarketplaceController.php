@@ -82,7 +82,7 @@ class MarketplaceController extends Controller
     {
         $analysis = $this->ai->analyze($request->user(), null, $request->file('image'), 'marketplace_search', $this->idempotencyKey($request), $request->validated('hint'), $this->ai->publiclyListed());
         $this->recordDemand(fn () => $this->demand->recordPhotoSearch(DemandMonitor::searcherKey($request), $analysis));
-        $analysis->candidates->isEmpty() && $analysis->classification === 'insufficient_confidence' && throw new ApiException('image_insufficient', 'That photo is not clear enough to identify. Try a closer, well-lit shot of the label.', 422, ['analysis' => (new AiAnalysisResource($analysis))->resolve()]);
+        $analysis->candidates->isEmpty() && $analysis->classification === 'insufficient_confidence' && throw new ApiException('image_insufficient', $analysis->is_mock ? 'Demo AI can only recognise its built-in demo photos. Pick a demo photo, or connect a live model.' : 'That photo is not clear enough to identify. Try a closer, well-lit shot of the label.', 422, ['analysis' => (new AiAnalysisResource($analysis))->resolve()]);
 
         return response()->json(['data' => (new AiAnalysisResource($analysis))->resolve(), 'meta' => ['server_time' => now()->toIso8601String()]]);
     }

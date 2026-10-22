@@ -23,9 +23,12 @@ use App\Services\InventoryService;
 use App\Services\OrderService;
 use App\Services\PosService;
 use App\Services\ReservationService;
+use App\Services\StockService;
+use App\Services\SyncRecorder;
 use App\Support\Text;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Deterministic end-to-end demo: 3 tenants, 4 stores, every role, the SAME canonical products stocked at different prices/quantities,
@@ -104,8 +107,8 @@ class DemoSeeder extends Seeder
             $item = $itemsA[$r];
             $listing = TenantListing::create(['tenant_id' => $a->id, 'store_id' => $an->id, 'inventory_item_id' => $item->id, 'product_id' => $item->variant->product_id, 'variant_id' => $item->variant_id,
                 'tenant_sku' => $sku, 'price_cents' => $price * 100, 'uom' => $item->variant->uom, 'visibility' => 'public', 'publication_status' => 'published', 'pickup_available' => true]);
-            \Illuminate\Support\Facades\DB::transaction(fn () => app(\App\Services\StockService::class)->adjust($a->id, $ownerA->id, $item->id, $loc->id, 'opening_balance', $qty, 'Opening balance (Antipolo)'));
-            app(\App\Services\SyncRecorder::class)->listing($a->id, $listing->id);
+            DB::transaction(fn () => app(StockService::class)->adjust($a->id, $ownerA->id, $item->id, $loc->id, 'opening_balance', $qty, 'Opening balance (Antipolo)'));
+            app(SyncRecorder::class)->listing($a->id, $listing->id);
         }
 
         // Tenant-specific alias and image (isolated to tenant A)

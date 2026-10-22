@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import "flowbite-react/plugin/tailwindcss";
+/* Light only: the demo runs on phones in daylight, so `dark:` variants (ours and Flowbite's) need a .dark class instead of following the OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+@import "@hardwhere/shared/styles.css";
+@source "../.flowbite-react/class-list.json";
+@source "../../../packages/shared/src";
+
+html { color-scheme: light; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; background: #f1f5f9; color: #0f172a; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+button, a, input, select, textarea { touch-action: manipulation; }
+
+/* Receipt printing: only the .print-area survives. */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: 0 !important; }
+  .no-print { display: none !important; }
+}

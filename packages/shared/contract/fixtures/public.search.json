@@ -1,0 +1,117 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "category": {
+                "id": 1,
+                "slug": "hand-tools",
+                "name": "Hand Tools"
+            },
+            "category_id": 1,
+            "brand": "Stanley",
+            "manufacturer": "Stanley",
+            "name": "Claw Hammer 51-188",
+            "model_number": "51-188",
+            "product_type": null,
+            "description": "Claw Hammer 51-188 — demo catalog entry.",
+            "attributes": {},
+            "compatibility": [],
+            "included_components": [],
+            "safety_info": null,
+            "warranty": null,
+            "ph_specs": {},
+            "synonyms": [
+                "martilyo",
+                "hammer"
+            ],
+            "status": "approved",
+            "images": [
+                {
+                    "url": "/demo-images/hand-tools.svg",
+                    "alt": "Claw Hammer 51-188 (demo image)",
+                    "is_primary": true
+                }
+            ],
+            "min_price_cents": 32900,
+            "max_price_cents": 38500,
+            "store_count": 4,
+            "relevance": 0.156,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "category": {
+                "id": 1,
+                "slug": "power-tools",
+                "name": "Power Tools"
+            },
+            "category_id": 1,
+            "brand": "Bosch",
+            "manufacturer": "Bosch",
+            "name": "Impact Drill GSB 13 RE",
+            "model_number": "GSB 13 RE",
+            "product_type": null,
+            "description": "Impact Drill GSB 13 RE — demo catalog entry.",
+            "attributes": {},
+            "compatibility": [],
+            "included_components": [],
+            "safety_info": "Wear eye and ear protection. Disconnect from power before changing accessories.",
+            "warranty": "1 year manufacturer warranty",
+            "ph_specs": {
+                "plug": "Type A/B",
+                "voltage": "220V 60Hz"
+            },
+            "synonyms": [
+                "hammer drill",
+                "bosch drill"
+            ],
+            "status": "approved",
+            "images": [
+                {
+                    "url": "/demo-images/power-tools.svg",
+                    "alt": "Impact Drill GSB 13 RE (demo image)",
+                    "is_primary": true
+                }
+            ],
+            "min_price_cents": 379000,
+            "max_price_cents": 395000,
+            "store_count": 2,
+            "relevance": 0.149,
+            "row_version": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/public/search?page=1",
+        "last": "http://localhost:8000/api/v1/public/search?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/public/search?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/public/search",
+        "per_page": 20,
+        "to": 3,
+        "total": 3
+    },
+    "meta_extra": {
+        "server_time": "2026-01-01T00:00:00+00:00"
+    }
+}

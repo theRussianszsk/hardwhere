@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Http;
  */
 class GemmaVisionProvider implements VisionProvider
 {
+    use DecodesModelJson;
+
     public const PROMPT = <<<'TXT'
 You identify hardware-store products (Philippines) from one photo. Reply with ONE JSON object and nothing else, using exactly these keys:
 {"name": string|null, "brand": string|null, "model": string|null, "part_number": string|null, "category": string|null,
@@ -49,15 +51,5 @@ TXT;
             ->reject(fn ($p) => ! empty($p['thought']))->pluck('text')->filter()->implode("\n");
 
         return new AnalysisResult(ProductExtraction::fromModelOutput($this->decodeJson($text)), 'gemma', $cfg['model'], false, ['text' => mb_substr($text, 0, 4000)]);
-    }
-
-    private function decodeJson(string $text): mixed
-    {
-        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', $text));
-        if (($start = strpos($text, '{')) === false || ($end = strrpos($text, '}')) === false) {
-            throw new AiProviderException('The model did not return JSON.');
-        }
-
-        return json_decode(substr($text, $start, $end - $start + 1), true) ?? throw new AiProviderException('The model returned malformed JSON.');
     }
 }

@@ -1,0 +1,79 @@
+{
+    "data": {
+        "id": 1,
+        "category": {
+            "id": 1,
+            "slug": "hand-tools",
+            "name": "Hand Tools"
+        },
+        "category_id": 1,
+        "brand": "Stanley",
+        "manufacturer": "Stanley",
+        "name": "Claw Hammer 51-188",
+        "model_number": "51-188",
+        "product_type": null,
+        "description": "Claw Hammer 51-188 — demo catalog entry.",
+        "attributes": {},
+        "compatibility": [],
+        "included_components": [],
+        "safety_info": null,
+        "warranty": null,
+        "ph_specs": {},
+        "synonyms": [
+            "martilyo",
+            "hammer"
+        ],
+        "status": "approved",
+        "images": [
+            {
+                "url": "/demo-images/hand-tools.svg",
+                "alt": "Claw Hammer 51-188 (demo image)",
+                "is_primary": true
+            }
+        ],
+        "variants": [
+            {
+                "id": 1,
+                "product_id": 1,
+                "name": "Stanley 51-188 Claw Hammer 16oz",
+                "model_number": "51-188",
+                "part_number": null,
+                "attributes": {
+                    "weight_oz": 16
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "4800000100017",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            {
+                "id": 1,
+                "product_id": 1,
+                "name": "Stanley 51-189 Claw Hammer 20oz",
+                "model_number": "51-189",
+                "part_number": null,
+                "attributes": {
+                    "weight_oz": 20
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": false,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "4800000100023",
+                        "type": "EAN13"
+                    }
+                ]
+            }
+        ],
+        "row_version": 1,
+        "updated_at": "2026-01-01T00:00:00+00:00"
+    }
+}

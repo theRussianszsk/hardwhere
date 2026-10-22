@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Api;
 
-
 class TenantRequest extends ApiRequest
 {
     /** @return array<string, mixed> */
