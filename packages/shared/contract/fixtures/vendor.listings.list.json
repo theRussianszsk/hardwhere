@@ -30,7 +30,7 @@
                 "name": "Bosch drill bit set 5-piece (4-8mm)",
                 "model_number": null,
                 "part_number": null,
-                "attributes": [],
+                "attributes": {},
                 "uom": "set",
                 "pack_quantity": 5,
                 "is_default": true,

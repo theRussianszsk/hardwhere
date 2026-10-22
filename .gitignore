@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vite/
+*.local
+.DS_Store
+# Native build output (platform sources are committed; build products are not)
+apps/*/android/build/
+apps/*/android/app/build/
+apps/*/android/.gradle/
+apps/*/android/local.properties
+apps/*/android/app/src/main/assets/public/
+apps/*/android/capacitor-cordova-android-plugins/
+apps/*/ios/App/Pods/
+apps/*/ios/App/App/public/
+apps/*/ios/App/build/
+apps/*/ios/DerivedData/

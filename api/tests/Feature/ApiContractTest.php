@@ -45,16 +45,16 @@ it('has no undeclared public API surface: every v1 route is in the manifest or d
     expect($missing->all())->toBe([], 'Add these routes to packages/shared/contract/endpoints.json (and the TS client): '.$missing->implode(', '));
 });
 
-/** Make fixtures stable across runs: fixed ids/timestamps/tokens, at most two list items. */
+/** Make fixtures stable across runs: fixed ids/timestamps/tokens, at most two list items. Decoded as objects so `{}` stays `{}`. */
 function normalizeFixture(mixed $v, ?string $key = null): mixed
 {
     if (is_array($v)) {
-        if (array_is_list($v)) {
-            return array_map(fn ($x) => normalizeFixture($x, $key), array_slice($v, 0, 2));
-        }
-        $out = [];
-        foreach ($v as $k => $x) {
-            $out[$k] = normalizeFixture($x, (string) $k);
+        return array_map(fn ($x) => normalizeFixture($x, $key), array_slice($v, 0, 2));
+    }
+    if ($v instanceof stdClass) {
+        $out = new stdClass;
+        foreach (get_object_vars($v) as $k => $x) {
+            $out->{$k} = normalizeFixture($x, (string) $k);
         }
 
         return $out;
@@ -84,7 +84,7 @@ it('writes real server responses as contract fixtures for the TypeScript type-ch
     $written = [];
     $rec = function (string $name, $response, ?int $status = null) use ($dir, &$written) {
         $status ? $response->assertStatus($status) : $response->assertSuccessful();
-        file_put_contents("$dir/$name.json", json_encode(normalizeFixture($response->json()), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+        file_put_contents("$dir/$name.json", json_encode(normalizeFixture(json_decode($response->getContent())), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
         $written[] = $name;
     };
     $photo = fn () => UploadedFile::fake()->image('p.jpg', 600, 600);

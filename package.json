@@ -1,0 +1,15 @@
+{
+  "name": "hardwhere",
+  "private": true,
+  "description": "Hardwhere mobile apps (vendor inventOS+POSsible, customer marketplace) and shared TypeScript library. The Laravel API lives in api/.",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build -w @hardwhere/vendor && npm run build -w @hardwhere/customer",
+    "cap:sync": "npm run cap:sync -w @hardwhere/vendor && npm run cap:sync -w @hardwhere/customer",
+    "dev:vendor": "npm run dev -w @hardwhere/vendor",
+    "dev:customer": "npm run dev -w @hardwhere/customer"
+  },
+  "engines": { "node": ">=22" }
+}

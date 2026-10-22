@@ -55,12 +55,12 @@
                     "model_number": "51-188",
                     "product_type": null,
                     "description": "Claw Hammer 51-188 — demo catalog entry.",
-                    "attributes": [],
+                    "attributes": {},
                     "compatibility": [],
                     "included_components": [],
                     "safety_info": null,
                     "warranty": null,
-                    "ph_specs": [],
+                    "ph_specs": {},
                     "synonyms": [
                         "martilyo",
                         "hammer"
