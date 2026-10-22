@@ -45,6 +45,9 @@ return [
 
     'marketplace' => [
         'low_stock_threshold' => 5,
+        // Once the store confirms or readies an order, the hold lasts at least this long from that moment (the initial
+        // reservation_ttl_minutes only covers the wait for the store to respond).
+        'pickup_hold_minutes' => (int) env('PICKUP_HOLD_MINUTES', 60 * 24),
     ],
 
     'demand' => [

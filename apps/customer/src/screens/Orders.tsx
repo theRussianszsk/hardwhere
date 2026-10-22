@@ -98,13 +98,14 @@ function Countdown({ order, refetch }: { order: OrderDto; refetch: () => void })
   const left = exp - now;
   const fired = useRef(false);
   useEffect(() => { if (left <= 0 && !fired.current) { fired.current = true; refetch(); } }, [left, refetch]);
-  if (order.status !== "reserved" || order.reservation?.status !== "active") return null;
+  // Every status the server can still auto-expire (ReservationService::EXPIRABLE): a confirmed or ready order lapses too if nobody collects it.
+  if (!["reserved", "confirmed", "ready_for_pickup"].includes(order.status) || order.reservation?.status !== "active") return null;
   if (left <= 0) return <Notice tone="warn">Your reservation time is up. The store may release these items. Checking the latest status…</Notice>;
   const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
   const mins = m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m}:${String(s).padStart(2, "0")}`;
   return (
     <Card className="border-warn bg-warn-soft">
-      <p className="text-xs font-semibold tracking-wide text-warn-ink uppercase">Reserved for you</p>
+      <p className="text-xs font-semibold tracking-wide text-warn-ink uppercase">{order.status === "reserved" ? "Reserved for you" : "Pick up within"}</p>
       <p className="text-2xl font-extrabold text-warn-ink tabular-nums" role="timer" aria-label={`Reservation expires in ${mins}`}>{mins}</p>
       <p className="text-xs text-warn-ink">Expires {formatManilaDateTime(order.reservation.expires_at)}. Collect before then or the items go back on the shelf.</p>
     </Card>
