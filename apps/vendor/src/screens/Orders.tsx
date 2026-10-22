@@ -16,6 +16,7 @@ const ACTION: Partial<Record<OrderStatus, string>> = {
   confirmed: "Confirm order", preparing: "Start preparing", ready_for_pickup: "Mark ready for pickup", fulfilled: "Mark fulfilled", cancelled: "Cancel order",
 };
 const FILTERS: (OrderStatus | "all")[] = ["all", "pending", "reserved", "confirmed", "preparing", "ready_for_pickup", "fulfilled", "cancelled"];
+const REASON_MAX = 200; // TransitionRequest: reason max:200
 export const StatusTag = ({ status }: { status: OrderStatus }) => <Pill tone={STATUS[status]?.tone ?? "slate"}>{STATUS[status]?.label ?? status}</Pill>;
 
 export function OrdersList() {
@@ -86,6 +87,7 @@ export function OrderDetail() {
   const order = live.data?.data ?? cached.item;
   const [pending, setPending] = useState<OrderStatus | null>(null);
   const [reason, setReason] = useState("");
+  const [triedEmpty, setTriedEmpty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
@@ -140,7 +142,7 @@ export function OrderDetail() {
         order.next_statuses.length > 0 ? (
           <div className="space-y-2" role="group" aria-label="Order actions">
             {order.next_statuses.map((s) => (
-              <Btn key={s} block variant={s === "cancelled" ? "danger" : s === order.next_statuses[0] ? "primary" : "secondary"} disabled={!isLive} onClick={() => { setPending(s); setResult(null); }}>{ACTION[s] ?? `Mark as ${STATUS[s]?.label ?? s}`}</Btn>
+              <Btn key={s} block variant={s === "cancelled" ? "danger" : s === order.next_statuses[0] ? "primary" : "secondary"} disabled={!isLive} onClick={() => { setPending(s); setResult(null); setTriedEmpty(false); }}>{ACTION[s] ?? `Mark as ${STATUS[s]?.label ?? s}`}</Btn>
             ))}
             {!isLive && <p className="text-xs text-slate-600">Connect to the internet to change this order.</p>}
           </div>
@@ -148,11 +150,12 @@ export function OrderDetail() {
       ) : <p className="text-sm text-slate-600">Your role can view orders but not change them.</p>}
 
       <ConfirmDialog open={!!pending} danger={pending === "cancelled"} title={pending ? (ACTION[pending] ?? "Change status") + "?" : ""} confirmLabel={pending === "cancelled" ? "Cancel the order" : "Yes, continue"} cancelLabel="Not now" busy={busy}
-        onCancel={() => setPending(null)} onConfirm={() => { if (pending !== "cancelled" || reason.trim().length >= 3) void go(); }}>
+        onCancel={() => { setPending(null); setTriedEmpty(false); }} onConfirm={() => { if (pending !== "cancelled" || reason.trim().length >= 3) void go(); else setTriedEmpty(true); }}>
         {pending === "cancelled" ? (
           <>
             <p>The customer is told and the held stock is released.</p>
-            <TextAreaField label="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} error={reason.length > 0 && reason.trim().length < 3 ? "Write a short reason." : null} />
+            <TextAreaField label="Reason (required)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={REASON_MAX} hint={`At least 3 characters · ${reason.length}/${REASON_MAX}`}
+              error={(triedEmpty || reason.length > 0) && reason.trim().length < 3 ? "Write a short reason for the customer (at least 3 characters)." : null} />
           </>
         ) : <p>Order {order.order_no} will move to <strong>{pending ? STATUS[pending]?.label : ""}</strong>. The customer sees this change.</p>}
       </ConfirmDialog>
