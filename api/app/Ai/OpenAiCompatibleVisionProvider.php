@@ -29,7 +29,7 @@ class OpenAiCompatibleVisionProvider implements VisionProvider
                 ['type' => 'text', 'text' => GemmaVisionProvider::PROMPT],
                 ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$mime.';base64,'.base64_encode($imageBytes)]],
             ]]],
-        ] + ($cfg['json_mode'] ? ['response_format' => ['type' => 'json_object']] : []);
+        ] + ($cfg['json_mode'] ? ['response_format' => ['type' => 'json_object']] : []) + ($cfg['max_tokens'] > 0 ? ['max_tokens' => $cfg['max_tokens']] : []);
 
         try {
             $request = Http::timeout($cfg['timeout'])->acceptJson();
