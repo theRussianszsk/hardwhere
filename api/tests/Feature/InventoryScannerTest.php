@@ -39,6 +39,10 @@ it('recognises a stocked product from a photo and adjusts its stock', function (
     $stocked = $this->getJson("/api/v1/vendor/inventory?variant_ids=$variantIds", $this->h)->assertOk()->json('data');
     expect(collect($stocked)->pluck('id')->all())->toBe([$drill['item']->id]);
 
-    $this->postJson("/api/v1/vendor/inventory/{$drill['item']->id}/adjustments", ['location_id' => $this->w['location']->id, 'movement_type' => 'purchase_receipt', 'quantity_delta' => 4], $this->h + idem('scan-adj'))
-        ->assertCreated()->assertJsonPath('data.after_quantity', 6);
+    // "+N received" goes through a purchase receipt at the item's current cost; "−1 damaged" is a plain adjustment.
+    $this->postJson('/api/v1/vendor/purchase-receipts', ['location_id' => $this->w['location']->id, 'notes' => 'Scanner quick receive', 'items' => [['inventory_item_id' => $drill['item']->id, 'quantity' => 4, 'unit_cost_cents' => $drill['item']->cost_cents]]], $this->h + idem('scan-rcv'))
+        ->assertCreated();
+    $this->postJson("/api/v1/vendor/inventory/{$drill['item']->id}/adjustments", ['location_id' => $this->w['location']->id, 'movement_type' => 'damage', 'quantity_delta' => -1, 'note' => 'Scanner quick remove'], $this->h + idem('scan-adj'))
+        ->assertCreated()->assertJsonPath('data.after_quantity', 5);
+    expect($drill['item']->fresh()->cost_cents)->toBe($drill['item']->cost_cents);
 });

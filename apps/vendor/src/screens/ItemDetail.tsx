@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   ApiError, COMMAND, formatManilaDateTime, humanizeError, newId, useActive, useAuth, useCacheItem, useNow, useOnlineQuery, useServices,
-  type InventoryItemDto, type LocationDto, type StockAdjustPayload, type TenantListingDto,
+  type InventoryItemDto, type LocationDto, type PurchaseReceivePayload, type StockAdjustPayload, type TenantListingDto,
 } from "@hardwhere/shared";
 import { CommandStatus } from "../lib/CommandStatus";
 import { fieldError, useOnline } from "../lib/hooks";
 import { Screen } from "../shell";
 import { Alert, Btn, Card, CachedTag, ConfirmDialog, EmptyState, ErrorState, LoadingState, Money, PesoInput, Pill, QuantityStepper, SelectField, Segmented, Sheet, StockBadge, TextAreaField } from "../ui";
 
+// "Received new stock" is recorded as a purchase receipt (receipt row + unit cost), never as a bare adjustment.
 const TYPES = [
   { value: "purchase_receipt", label: "Received new stock", sign: 1, note: false },
   { value: "return", label: "Customer return", sign: 1, note: false },
@@ -119,10 +120,13 @@ export function ItemDetail() {
 
 function AdjustSheet({ open, onClose, item, locations, onQueued }: { open: boolean; onClose: () => void; item: InventoryItemDto; locations: LocationDto[]; onQueued: (id: string, title: string) => void }) {
   const active = useActive();
-  const [type, setType] = useState<(typeof TYPES)[number]["value"]>("purchase_receipt");
+  const { can } = useAuth();
+  const types = TYPES.filter((x) => x.value !== "purchase_receipt" || can("purchase.receive"));
+  const [type, setType] = useState<(typeof TYPES)[number]["value"]>(types[0]!.value);
   const [dir, setDir] = useState<"add" | "remove">("add");
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
+  const [unitCost, setUnitCost] = useState<number | null>(item.cost_cents ?? null);
   const [locId, setLocId] = useState<number | null>(item.default_location_id);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -137,18 +141,29 @@ function AdjustSheet({ open, onClose, item, locations, onQueued }: { open: boole
   const effectiveLoc = locId !== null && itemLocs.includes(locId) ? locId : itemLocs[0] ?? null;
   const locOnHand = item.locations ? (item.locations.find((l) => l.location_id === effectiveLoc)?.on_hand ?? 0) : item.on_hand;
   const noteMissing = t.note && note.trim().length < 3;
+  const receiving = type === "purchase_receipt";
+  const costMissing = receiving && unitCost === null;
   const tooMany = delta < 0 && locOnHand !== null && locOnHand !== undefined && -delta > locOnHand;
 
   useEffect(() => { if (open) { setErr(null); setConfirm(false); } }, [open]);
   const locLabel = (lid: number | null) => (lid === null ? "this location" : locations.find((l) => l.id === lid)?.name ?? `location ${lid}`);
 
   const submit = async () => {
-    if (!active || effectiveLoc === null) return;
+    if (!active || effectiveLoc === null || (receiving && unitCost === null)) return;
     setBusy(true); setErr(null);
     try {
-      const payload: StockAdjustPayload = { itemId: item.id, locationId: effectiveLoc, movement_type: type, quantity_delta: delta, note: note.trim() || undefined };
-      const title = `Adjust stock: ${item.name ?? item.sku} ${delta > 0 ? "+" : "−"}${Math.abs(delta)}`;
-      const row = await active.store.outbox.enqueue(COMMAND.stockAdjust, payload, { id: newId(), label: title });
+      const name = item.name ?? item.sku;
+      let title: string;
+      let row: { id: string };
+      if (receiving) {
+        const payload: PurchaseReceivePayload = { input: { location_id: effectiveLoc, notes: note.trim() || undefined, items: [{ inventory_item_id: item.id, quantity: qty, unit_cost_cents: unitCost! }] } };
+        title = `Receive stock: ${name} +${qty}`;
+        row = await active.store.outbox.enqueue(COMMAND.purchaseReceive, payload, { id: newId(), label: title });
+      } else {
+        const payload: StockAdjustPayload = { itemId: item.id, locationId: effectiveLoc, movement_type: type, quantity_delta: delta, note: note.trim() || undefined };
+        title = `Adjust stock: ${name} ${delta > 0 ? "+" : "−"}${Math.abs(delta)}`;
+        row = await active.store.outbox.enqueue(COMMAND.stockAdjust, payload, { id: newId(), label: title });
+      }
       void active.kickOutbox();
       setConfirm(false); setNote(""); setQty(1);
       onQueued(row.id, title);
@@ -160,7 +175,7 @@ function AdjustSheet({ open, onClose, item, locations, onQueued }: { open: boole
       <Sheet open={open} onClose={onClose} title="Adjust stock">
         <p className="text-sm text-slate-700">{item.name ?? item.sku} · {locOnHand ?? "?"} on hand at {locLabel(effectiveLoc)}</p>
         <SelectField label="What happened?" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
-          {TYPES.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
+          {types.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
         </SelectField>
         {t.sign === 0 && <Segmented label="Direction" value={dir} onChange={setDir} options={[{ value: "add", label: "Add units" }, { value: "remove", label: "Remove units" }]} />}
         {itemLocs.length > 1 && (
@@ -172,14 +187,16 @@ function AdjustSheet({ open, onClose, item, locations, onQueued }: { open: boole
           <p className="text-sm font-medium text-slate-800" id="qty-label">Quantity</p>
           <QuantityStepper label="Quantity" value={qty} onChange={setQty} max={1_000_000} />
         </div>
+        {receiving && <PesoInput label="Cost per unit" cents={unitCost} onChange={setUnitCost} hint="Recorded on the purchase receipt; it becomes this item's cost." error={costMissing ? "Enter what you paid per unit." : null} />}
         <TextAreaField label={t.note ? "Reason (required)" : "Note (optional)"} value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} error={t.note && note.length > 0 && noteMissing ? "Write a short reason." : null} />
         {tooMany && <Alert tone="warn">This removes more than the {locOnHand} on hand here. The server will refuse it if the stock isn't there.</Alert>}
         {err && <Alert tone="error">{err}</Alert>}
-        <Btn block disabled={noteMissing || effectiveLoc === null} onClick={() => setConfirm(true)}>Review adjustment</Btn>
+        <Btn block disabled={noteMissing || costMissing || effectiveLoc === null} onClick={() => setConfirm(true)}>Review adjustment</Btn>
       </Sheet>
       <ConfirmDialog open={confirm} title="Confirm stock change" confirmLabel="Queue adjustment" busy={busy} onCancel={() => setConfirm(false)} onConfirm={() => void submit()}>
         <p><strong>{delta > 0 ? "Add" : "Remove"} {Math.abs(delta)}</strong> unit{Math.abs(delta) === 1 ? "" : "s"} of {item.name ?? item.sku} at {locLabel(effectiveLoc)}.</p>
         {locOnHand !== null && locOnHand !== undefined && <p className="text-sm text-slate-700">Expected: {locOnHand} → {locOnHand + delta}</p>}
+        {receiving && unitCost !== null && <p className="text-sm text-slate-700">Recorded as a purchase receipt at <Money cents={unitCost} /> per unit.</p>}
         <p className="text-sm text-slate-700">It is saved on this phone first and only counts once the server confirms it.</p>
       </ConfirmDialog>
     </>

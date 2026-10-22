@@ -14,6 +14,7 @@ import type { HandlerDeps } from "./runtime";
 export const COMMAND = {
   aiAnalyze: "ai.analyze",
   stockAdjust: "stock.adjust",
+  purchaseReceive: "purchase.receive",
   posCheckout: "pos.checkout",
   photoSearch: "search.photo",
   orderPlace: "order.place",
@@ -22,6 +23,7 @@ export const COMMAND = {
 
 export interface AiAnalyzePayload { photoRef: string; hint?: string }
 export interface StockAdjustPayload { itemId: number; locationId: number; movement_type: string; quantity_delta: number; note?: string }
+export interface PurchaseReceivePayload { input: { location_id: number; supplier_id?: number; reference?: string; notes?: string; items: { inventory_item_id: number; quantity: number; unit_cost_cents: number }[] } }
 export interface PosCheckoutPayload { input: CheckoutInput }
 export interface PhotoSearchPayload { photoRef: string; hint?: string }
 export interface OrderPlacePayload { input: PlaceOrderInput }
@@ -45,6 +47,7 @@ export function vendorHandlers({ api, photos }: HandlerDeps): Record<string, Com
       },
     },
     [COMMAND.stockAdjust]: { autoRetry: true, run: async (p: StockAdjustPayload, { idempotencyKey }) => (await api.stockAdjust(p.itemId, { location_id: p.locationId, movement_type: p.movement_type, quantity_delta: p.quantity_delta, note: p.note }, idempotencyKey)).data },
+    [COMMAND.purchaseReceive]: { autoRetry: true, run: async (p: PurchaseReceivePayload, { idempotencyKey }) => api.purchaseReceive(p.input, idempotencyKey) },
     [COMMAND.posCheckout]: { autoRetry: false, run: async (p: PosCheckoutPayload, { idempotencyKey }) => (await api.posCheckout(p.input, idempotencyKey)).data },
   };
 }
