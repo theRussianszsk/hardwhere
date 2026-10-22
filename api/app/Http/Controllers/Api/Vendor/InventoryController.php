@@ -55,6 +55,10 @@ class InventoryController extends Controller
                     });
             });
         }
+        // Comma-separated variant ids: the live scanner asks "which of these recognised variants do we already stock?".
+        if ($variantIds = array_values(array_filter(array_map('intval', explode(',', (string) $request->query('variant_ids')))))) {
+            $q->whereIn('inventory_items.variant_id', array_slice($variantIds, 0, 50));
+        }
         if ($request->boolean('low_stock')) {
             $q->whereRaw('(SELECT COALESCE(SUM(on_hand - reserved), 0) FROM stock_snapshots WHERE inventory_item_id = inventory_items.id) <= inventory_items.reorder_threshold');
         }

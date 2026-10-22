@@ -34,6 +34,7 @@ class MockVisionProvider implements VisionProvider
             'unrecognized' => ['name' => null, 'brand' => null, 'model' => null, 'category' => null, 'attributes' => [], 'confidence' => $c(0.0, 0.0, 0.0, 0.0, 0.0), 'overall_confidence' => 0.1,
                 'notes' => ['Demo AI only recognises its built-in demo photos, so it will not guess what is in this photo. Pick a demo photo, or connect a live model (AI_PROVIDER=gemma or openai).']],
             'blurry' => ['name' => null, 'brand' => null, 'model' => null, 'category' => null, 'attributes' => [], 'confidence' => $c(0.1, 0.0, 0.0, 0.1, 0.0), 'overall_confidence' => 0.12, 'image_sufficient' => false, 'notes' => ['Image is too blurry to read any label.']],
+            'not-hardware' => ['name' => 'Instant noodles cup', 'brand' => 'Lucky Me!', 'model' => null, 'category' => 'Food', 'attributes' => [], 'confidence' => $c(0.92, 0.9, 0.0, 0.9, 0.0), 'overall_confidence' => 0.9, 'is_hardware' => false, 'notes' => ['Not a hardware product']],
         ];
     }
 

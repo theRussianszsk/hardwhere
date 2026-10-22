@@ -29,6 +29,7 @@ final readonly class ProductExtraction
         public ?string $material = null,
         public ?string $description = null,
         public ?array $estimatedPricePhp = null,
+        public bool $isHardware = true,
     ) {}
 
     public function conf(string $field): float
@@ -45,7 +46,7 @@ final readonly class ProductExtraction
             'barcode_text' => $this->barcodeText, 'confidence' => $this->confidence, 'overall_confidence' => $this->overallConfidence,
             'image_sufficient' => $this->imageSufficient, 'notes' => $this->notes,
             'product_type' => $this->productType, 'subcategory' => $this->subcategory, 'material' => $this->material,
-            'description' => $this->description, 'estimated_price_php' => $this->estimatedPricePhp,
+            'description' => $this->description, 'estimated_price_php' => $this->estimatedPricePhp, 'is_hardware' => $this->isHardware,
         ];
     }
 
@@ -88,6 +89,11 @@ final readonly class ProductExtraction
         $max = is_numeric($price['max'] ?? null) ? (int) round((float) $price['max']) : null;
         $estimate = $min !== null && $max !== null && $min >= 0 && $max >= $min && $max <= 10_000_000 ? ['min_php' => $min, 'max_php' => $max] : null;
 
+        $notes = array_values(array_filter(array_map(fn ($n) => $str($n, 200), is_array($raw['notes'] ?? null) ? array_slice($raw['notes'], 0, 5) : [])));
+        // Absent flag = hardware (older prompts, mock fixtures); an explicit false or the prompt's note marks it as not hardware.
+        $isHardware = filter_var($raw['is_hardware'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        $isHardware = $isHardware && ! array_filter($notes, fn ($n) => stripos($n, 'not a hardware') !== false);
+
         $barcode = $str($raw['barcode_text'] ?? null, 40);
         $barcode = $barcode ? preg_replace('/\D+/', '', $barcode) : null;
 
@@ -99,9 +105,9 @@ final readonly class ProductExtraction
             barcodeText: $barcode ?: null, confidence: $confidence,
             overallConfidence: $clamp($raw['overall_confidence'] ?? 0),
             imageSufficient: ! array_key_exists('image_sufficient', $raw) || (bool) $raw['image_sufficient'],
-            notes: array_values(array_filter(array_map(fn ($n) => $str($n, 200), is_array($raw['notes'] ?? null) ? array_slice($raw['notes'], 0, 5) : []))),
+            notes: $notes,
             productType: $str($raw['product_type'] ?? null, 80), subcategory: $str($raw['subcategory'] ?? null, 80),
-            material: $str($raw['material'] ?? null, 80), description: $str($raw['description'] ?? null, 300), estimatedPricePhp: $estimate,
+            material: $str($raw['material'] ?? null, 80), description: $str($raw['description'] ?? null, 300), estimatedPricePhp: $estimate, isHardware: $isHardware,
         );
     }
 }

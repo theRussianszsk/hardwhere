@@ -2,8 +2,6 @@
     "data": {
         "id": 1,
         "purpose": "intake",
-        "provider": "mock",
-        "model": "mock-fixtures-v1",
         "is_mock": true,
         "provider_label": "Demo AI (deterministic mock, not live inference)",
         "extracted": {
@@ -34,7 +32,8 @@
             "subcategory": null,
             "material": null,
             "description": null,
-            "estimated_price_php": null
+            "estimated_price_php": null,
+            "is_hardware": true
         },
         "classification": "likely_same_product",
         "overall_confidence": 0.62,

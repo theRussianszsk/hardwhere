@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inventory Scanner</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#e4e7ec; --brand:#c2410c; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --info:#1d4ed8; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151a; --card:#1b2028; --ink:#e8ecf2; --muted:#9aa4b2; --line:#2a313c; --brand:#fb923c; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+  h1 { font-size:20px; margin:4px 0 0; } h2 { font-size:16px; margin:0 0 10px; } h3 { font-size:14px; margin:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; min-width:0; }
+  .muted { color:var(--muted); font-size:13px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .between { justify-content:space-between; align-items:center; }
+  label { display:grid; gap:4px; font-size:13px; color:var(--muted); flex:1 1 140px; }
+  label.check { display:flex; align-items:center; gap:6px; flex:0 0 auto; min-height:44px; }
+  input, select, button { font:inherit; min-height:44px; border-radius:8px; border:1px solid var(--line); padding:8px 10px; background:var(--card); color:var(--ink); min-width:0; }
+  input[type=checkbox] { min-height:auto; width:18px; height:18px; }
+  button { cursor:pointer; background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; padding:8px 16px; }
+  button.secondary { background:transparent; color:var(--ink); border-color:var(--line); }
+  button.small { min-height:36px; padding:4px 12px; font-size:13px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .tabs { display:flex; gap:8px; } .tabs button { flex:1; background:transparent; color:var(--ink); border-color:var(--line); }
+  .tabs button.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .banner { padding:10px 12px; border-radius:8px; font-size:13px; border:1px solid; }
+  .banner.demo { color:var(--warn); border-color:var(--warn); } .banner.err { color:var(--bad); border-color:var(--bad); } .banner.ok { color:var(--ok); border-color:var(--ok); } .banner.info { color:var(--info); border-color:var(--info); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid currentColor; white-space:nowrap; }
+  .exact_match, .likely_same_product, .good { color:var(--ok); } .likely_variant, .possible_duplicate, .low { color:var(--warn); } .new_product_candidate { color:var(--info); } .insufficient_confidence, .not_hardware, .out { color:var(--bad); }
+  .bar { height:8px; border-radius:99px; background:var(--line); overflow:hidden; } .bar > i { display:block; height:100%; background:var(--brand); }
+  dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:8px 0 0; } dt { color:var(--muted); font-size:13px; } dd { margin:0; overflow-wrap:anywhere; }
+  .cand { border:1px solid var(--line); border-radius:10px; padding:12px; display:grid; gap:8px; margin-top:10px; }
+  .cand.stocked { border-color:var(--ok); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; } .chip { font-size:12px; padding:2px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--line); }
+  .chip.good { color:var(--ok); } .chip.bad { color:var(--bad); } .chip.warn { color:var(--warn); }
+  .hidden { display:none !important; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; } td, th { text-align:left; padding:8px 6px; border-top:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; } td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tbody tr { cursor:pointer; } tbody tr:hover, tbody tr.sel { background:var(--bg); }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
+  .stat { border:1px solid var(--line); border-radius:10px; padding:10px 12px; } .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
+  .split { display:grid; gap:14px; grid-template-columns:minmax(0, 1fr); align-items:start; }
+  @media (min-width:900px) { .split { grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); } }
+  /* Grid/flex children default to min-width:auto, so a 1280px video would stretch its column. Every scan column child may shrink. */
+  .scan-col { display:grid; gap:12px; align-content:start; grid-template-columns:minmax(0, 1fr); }
+  .scan-col > * { min-width:0; }
+  label > input, label > select { width:100%; }
+  input[type=file] { padding:6px; font-size:13px; color:var(--muted); }
+  input[type=file]::file-selector-button { font:inherit; font-weight:600; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink); padding:6px 12px; margin-right:10px; cursor:pointer; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .controls button { flex:1 1 auto; }
+  .controls label.check { flex:0 0 auto; padding:0 6px; }
+  @media (min-width:900px) { #scan-result { position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; } }
+  .cam { position:relative; width:100%; background:#000; border-radius:10px; overflow:hidden; aspect-ratio:4/3; max-height:68vh; }
+  .cam video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .cam .reticle { position:absolute; inset:12%; border:2px dashed rgba(255,255,255,.55); border-radius:12px; pointer-events:none; transition:border-color .2s; }
+  .cam.steady .reticle { border-color:#4ade80; border-style:solid; } .cam.busy .reticle { border-color:#fb923c; border-style:solid; }
+  .cam .status { position:absolute; left:10px; right:10px; bottom:10px; background:rgba(0,0,0,.62); color:#fff; font-size:13px; padding:6px 10px; border-radius:8px; }
+  .cam .idle { position:absolute; inset:0; display:grid; place-items:center; color:#cbd5e1; font-size:14px; text-align:center; padding:20px; }
+  .meter { height:4px; background:rgba(255,255,255,.2); border-radius:9px; margin-top:4px; overflow:hidden; } .meter > i { display:block; height:100%; background:#4ade80; width:0; transition:width .2s; }
+  .shot { position:relative; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#000; }
+  .shot img { display:block; width:100%; max-height:260px; object-fit:contain; }
+  .shot.busy::after { content:'Recognising…'; position:absolute; inset:auto 0 0 0; padding:6px 10px; background:rgba(0,0,0,.62); color:#fff; font-size:13px; }
+  .shot.busy img { animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity:.6; } }
+  @media (prefers-reduced-motion: reduce) { .shot.busy img { animation:none; } }
+  .history { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+  .history button { flex:0 0 auto; display:grid; gap:2px; text-align:left; width:160px; background:var(--bg); color:var(--ink); border-color:var(--line); font-weight:400; font-size:12px; opacity:1; cursor:default; }
+  .history button strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .history button strong { font-size:13px; }
+  .ledger td { white-space:nowrap; } .ledger td.note { white-space:normal; }
+</style>
+</head>
+<body>
+<main>
+  <div class="row between">
+    <div>
+      <h1>Inventory Scanner</h1>
+      <div class="muted">Point the camera at a product. It is recognised automatically when the frame is steady, then matched to your stock.</div>
+    </div>
+    <div id="who" class="muted"></div>
+  </div>
+
+  <section class="card" id="auth">
+    <h2>Sign in</h2>
+    <div class="row">
+      <label>Email <input id="email" type="email" autocomplete="username" value="inventory.a@hardwhere.test"></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password" value="password"></label>
+      <label id="tenant-wrap" class="hidden">Business <select id="tenant"></select></label>
+      <button id="login">Sign in</button>
+    </div>
+    <div id="auth-msg" class="muted" style="margin-top:8px">Demo account from the seeder (inventory manager at Tenant A).</div>
+  </section>
+
+  <div id="app" class="hidden" style="display:grid;gap:14px">
+    <div class="tabs" role="tablist">
+      <button id="tab-scan" class="on" role="tab">Live scan</button>
+      <button id="tab-stock" role="tab">Inventory</button>
+    </div>
+
+    <!-- LIVE SCAN -->
+    <section id="view-scan" class="split">
+      <div class="card scan-col">
+        <div id="cam" class="cam">
+          <video id="video" playsinline muted></video>
+          <div class="reticle"></div>
+          <div id="cam-idle" class="idle">Camera is off.</div>
+          <div id="cam-status" class="status hidden"><span id="cam-text">Starting…</span><div class="meter"><i id="cam-meter"></i></div></div>
+        </div>
+        <div class="controls">
+          <button id="cam-toggle">Start camera</button>
+          <button id="cam-snap" class="secondary" disabled>Recognise now</button>
+          <label class="check"><input id="auto" type="checkbox" checked> Auto-recognise</label>
+        </div>
+        <label>No camera? Use a photo <input id="file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"></label>
+        <div id="cam-note" class="muted">Live camera needs HTTPS or localhost. Each recognition counts toward the 12-per-minute photo limit, so the scanner only sends a frame when the view is steady and has changed.</div>
+        <div id="history-wrap" class="hidden"><h3 style="margin-bottom:6px">This session</h3><div id="history" class="history"></div></div>
+      </div>
+      <section id="scan-result" class="card" aria-live="polite">
+        <h2>Result</h2>
+        <div class="muted">Nothing scanned yet.</div>
+      </section>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="view-stock" class="hidden" style="display:grid;gap:14px">
+      <div class="stats">
+        <div class="stat"><span class="muted">Items</span><b id="st-total">–</b></div>
+        <div class="stat"><span class="muted">Low or out of stock</span><b id="st-low">–</b></div>
+        <div class="stat"><span class="muted">Store</span><b id="st-store" style="font-size:15px">–</b></div>
+      </div>
+      <div class="split">
+        <div class="card">
+          <div class="row">
+            <label style="flex:3 1 200px">Search SKU, barcode or name <input id="q" type="search" placeholder="e.g. HP1630, 4800000100017, hammer"></label>
+            <label>Sort <select id="sort"><option value="">SKU</option><option value="updated">Recently updated</option></select></label>
+            <label class="check"><input id="low" type="checkbox"> Low stock only</label>
+          </div>
+          <div class="table-wrap" style="margin-top:10px">
+            <table>
+              <thead><tr><th>SKU</th><th>Product</th><th class="num">Available</th><th class="num">On hand</th><th class="num">Reorder at</th></tr></thead>
+              <tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="row between" style="margin-top:10px">
+            <span id="page-info" class="muted"></span>
+            <div class="row"><button id="prev" class="secondary small">Previous</button><button id="next" class="secondary small">Next</button></div>
+          </div>
+        </div>
+        <section id="detail" class="card"><h2>Item</h2><div class="muted">Select an item, or scan one.</div></section>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+const API = '/api/v1';
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const label = (s) => String(s ?? '').replace(/^attr:/, '').replace(/_/g, ' ');
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+const fmt = (n) => (n == null ? '–' : Number(n).toLocaleString('en-PH'));
+
+const state = { token: null, me: null, stores: [], locations: [], categories: null, page: 1, selected: null, history: [] };
+const can = (p) => (state.me?.permissions || []).includes(p);
+
+// Movement types the adjust form offers. sign: +1 / -1 forces direction, 0 lets the user enter a signed number.
+const MOVES = {
+  purchase_receipt: { text: 'Received stock', sign: 1 }, return: { text: 'Customer return', sign: 1 },
+  correction: { text: 'Count correction', sign: 0, note: true }, manual_adjustment: { text: 'Manual adjustment', sign: 0, note: true },
+  damage: { text: 'Damaged', sign: -1, note: true }, loss: { text: 'Lost / missing', sign: -1, note: true },
+};
+
+function errMessage(body, status) {
+  const e = body?.error ?? body;
+  const fields = e?.fields ? Object.values(e.fields).flat().join(' ') : '';
+  return [e?.message, fields].filter(Boolean).join(' ') || `Request failed (${status}).`;
+}
+
+async function api(path, opts = {}) {
+  const headers = { Accept: 'application/json', ...(opts.headers || {}) };
+  if (state.token && !opts.anon) headers.Authorization = 'Bearer ' + state.token;
+  if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts = { ...opts, body: JSON.stringify(opts.json) }; }
+  let res;
+  try { res = await fetch(API + path, { ...opts, headers }); }
+  catch { throw { message: 'Server unreachable. Is the API running on this host?', status: 0 }; }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    if (res.status === 401 && !opts.anon) signedOut('Your session expired. Sign in again.');
+    throw { message: errMessage(body, res.status), status: res.status, body, retryAfter: +res.headers.get('Retry-After') || 0 };
+  }
+  return body;
+}
+const post = (path, json) => api(path, { method: 'POST', json, headers: { 'Idempotency-Key': 'inv-' + uuid() } });
+
+/* ---------------- auth ---------------- */
+
+$('login').onclick = async () => {
+  const btn = $('login'); btn.disabled = true;
+  try {
+    const tenant = $('tenant-wrap').classList.contains('hidden') ? undefined : $('tenant').value;
+    const body = await api('/auth/login', { method: 'POST', anon: true, json: { email: $('email').value, password: $('password').value, app: 'vendor', tenant, device_name: 'inventory-scanner' } });
+    state.token = body.token;
+    state.me = body;
+    $('auth').classList.add('hidden'); $('app').classList.remove('hidden');
+    $('who').innerHTML = `${esc(body.user.name)} · ${esc(body.tenant?.name)} · ${esc(label(body.role))} <button id="logout" class="secondary small">Sign out</button>`;
+    $('logout').onclick = async () => { stopCamera(); await api('/auth/logout', { method: 'POST' }).catch(() => {}); signedOut('Signed out.'); };
+    [state.stores, state.locations] = await Promise.all([api('/vendor/stores').then((r) => r.data || []), api('/vendor/locations').then((r) => r.data || [])]);
+    $('st-store').textContent = state.stores.length === 1 ? state.stores[0].name : `${state.stores.length} stores`;
+    if (!can('ai.analyze')) $('scan-result').innerHTML = '<h2>Result</h2><div class="banner err">Your role cannot use photo recognition. You can still browse inventory.</div>';
+    loadStock();
+  } catch (e) {
+    const tenants = e.body?.error?.details?.tenants;
+    if (tenants?.length) {
+      $('tenant').innerHTML = tenants.map((t) => `<option value="${esc(t.slug)}">${esc(t.name)}</option>`).join('');
+      $('tenant-wrap').classList.remove('hidden');
+    }
+    $('auth-msg').textContent = e.message;
+  }
+  btn.disabled = false;
+};
+
+function signedOut(msg) {
+  stopCamera();
+  state.token = null; state.me = null;
+  $('app').classList.add('hidden'); $('auth').classList.remove('hidden');
+  $('who').textContent = ''; $('auth-msg').textContent = msg;
+}
+
+/* ---------------- tabs ---------------- */
+
+function setTab(t) {
+  $('tab-scan').classList.toggle('on', t === 'scan'); $('tab-stock').classList.toggle('on', t === 'stock');
+  $('view-scan').classList.toggle('hidden', t !== 'scan'); $('view-stock').classList.toggle('hidden', t !== 'stock');
+  if (t === 'stock') loadStock();
+}
+$('tab-scan').onclick = () => setTab('scan');
+$('tab-stock').onclick = () => setTab('stock');
+
+/* ---------------- inventory list ---------------- */
+
+const stockBadge = (it) => it.available == null ? '' : it.available <= 0 ? '<span class="badge out">out</span>' : it.low_stock ? '<span class="badge low">low</span>' : '';
+
+async function loadStock() {
+  if (!state.token) return;
+  const params = new URLSearchParams({ page: state.page, per_page: 20 });
+  if ($('q').value.trim()) params.set('q', $('q').value.trim());
+  if ($('low').checked) params.set('low_stock', '1');
+  if ($('sort').value) params.set('sort', $('sort').value);
+  try {
+    const [r, low] = await Promise.all([api('/vendor/inventory?' + params), api('/vendor/inventory?per_page=1&low_stock=1')]);
+    $('st-low').textContent = fmt(low.meta?.total);
+    if (!params.has('q') && !params.has('low_stock')) $('st-total').textContent = fmt(r.meta?.total);
+    $('rows').innerHTML = r.data.map((it) => `<tr data-id="${it.id}" class="${state.selected === it.id ? 'sel' : ''}">
+        <td>${esc(it.sku)}</td><td><strong>${esc(it.product_name)}</strong>${it.name && it.name !== it.product_name ? `<div class="muted">${esc(it.name)}</div>` : ''}<div class="muted">${esc(it.brand)}</div></td>
+        <td class="num">${fmt(it.available)} ${stockBadge(it)}</td><td class="num">${fmt(it.on_hand)}</td><td class="num">${fmt(it.reorder_threshold)}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">No items match. Scan a product to add it.</td></tr>';
+    document.querySelectorAll('#rows tr[data-id]').forEach((tr) => (tr.onclick = () => openItem(+tr.dataset.id, $('detail'))));
+    const m = r.meta || {};
+    $('page-info').textContent = m.total ? `Page ${m.current_page} of ${m.last_page} · ${fmt(m.total)} items` : '';
+    $('prev').disabled = !(m.current_page > 1); $('next').disabled = !(m.current_page < m.last_page);
+  } catch (e) { $('rows').innerHTML = `<tr><td colspan="5"><div class="banner err">${esc(e.message)}</div></td></tr>`; }
+}
+
+let searchTimer;
+$('q').oninput = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { state.page = 1; loadStock(); }, 300); };
+$('low').onchange = $('sort').onchange = () => { state.page = 1; loadStock(); };
+$('prev').onclick = () => { state.page--; loadStock(); };
+$('next').onclick = () => { state.page++; loadStock(); };
+
+/* ---------------- item detail + adjust ---------------- */
+
+const locName = (id) => state.locations.find((l) => l.id === id)?.name ?? `Location #${id}`;
+
+async function openItem(id, box) {
+  state.selected = id;
+  document.querySelectorAll('#rows tr').forEach((tr) => tr.classList.toggle('sel', +tr.dataset.id === id));
+  box.innerHTML = '<h2>Item</h2><div class="muted">Loading…</div>';
+  try {
+    const it = (await api(`/vendor/inventory/${id}`)).data;
+    const ledger = can('inventory.adjust') ? (await api(`/vendor/inventory/${id}/ledger?per_page=10`)).data : null;
+    box.innerHTML = `
+      <div class="row between"><h2 style="margin:0">${esc(it.product_name)}</h2>${stockBadge(it)}</div>
+      <div class="muted">${esc([it.brand, it.name].filter(Boolean).join(' · '))}</div>
+      <dl>
+        <dt>SKU</dt><dd>${esc(it.sku)}</dd>
+        ${it.barcodes?.length ? `<dt>Barcodes</dt><dd>${esc(it.barcodes.join(', '))}</dd>` : ''}
+        <dt>Available</dt><dd><strong>${fmt(it.available)}</strong> (on hand ${fmt(it.on_hand)}, reserved ${fmt(it.reserved)})</dd>
+        <dt>Reorder at</dt><dd>${fmt(it.reorder_threshold)}</dd>
+        ${it.cost_cents != null ? `<dt>Unit cost</dt><dd>₱${(it.cost_cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</dd>` : ''}
+        ${(it.locations || []).map((l) => `<dt>${esc(locName(l.location_id))}</dt><dd>${fmt(l.on_hand)} on hand${l.reserved ? `, ${fmt(l.reserved)} reserved` : ''}</dd>`).join('')}
+      </dl>
+      ${adjustFormHtml(it)}
+      ${ledger ? `<h3 style="margin-top:14px">Recent movements</h3><div class="table-wrap"><table class="ledger"><tr><th>When</th><th>Type</th><th class="num">Change</th><th class="num">After</th><th>Note</th></tr>
+        ${ledger.map((e) => `<tr><td>${esc(new Date(e.occurred_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila', dateStyle: 'short', timeStyle: 'short' }))}</td><td>${esc(label(e.movement_type))}</td>
+          <td class="num ${e.quantity_delta > 0 ? 'good' : 'out'}">${e.quantity_delta > 0 ? '+' : ''}${fmt(e.quantity_delta)}</td><td class="num">${fmt(e.after_quantity)}</td><td class="note muted">${esc(e.note)}</td></tr>`).join('')}</table></div>` : ''}`;
+    wireAdjust(box, it, () => { openItem(id, box); loadStock(); });
+  } catch (e) { box.innerHTML = `<h2>Item</h2><div class="banner err">${esc(e.message)}</div>`; }
+}
+
+function adjustFormHtml(it) {
+  if (!can('inventory.adjust')) return '<div class="muted" style="margin-top:10px">Your role cannot adjust stock.</div>';
+  const locs = state.locations.filter((l) => !it.locations?.length || it.locations.some((x) => x.location_id === l.id) || l.id === it.default_location_id);
+  const opts = (locs.length ? locs : state.locations).map((l) => `<option value="${l.id}" ${l.id === it.default_location_id ? 'selected' : ''}>${esc(l.name)}</option>`).join('');
+  return `<div class="cand" data-adjust>
+    <h3>Adjust stock</h3>
+    <div class="row">
+      <button class="small" data-quick="1">+1 received</button><button class="small" data-quick="5">+5 received</button>
+      <button class="small secondary" data-quick="-1">−1 damaged</button>
+    </div>
+    <div class="row">
+      <label>Reason <select data-f="move">${Object.entries(MOVES).map(([k, m]) => `<option value="${k}">${m.text}</option>`).join('')}</select></label>
+      <label>Quantity <input data-f="qty" type="number" step="1" value="1"></label>
+      <label>Location <select data-f="loc">${opts}</select></label>
+    </div>
+    <div class="row"><label style="flex:3 1 200px">Note <input data-f="note" maxlength="300" placeholder="Required for corrections, damage and loss"></label><button data-f="save">Save</button></div>
+    <div data-f="msg"></div>
+  </div>`;
+}
+
+function wireAdjust(root, it, done) {
+  const box = root.querySelector('[data-adjust]'); if (!box) return;
+  const f = (n) => box.querySelector(`[data-f="${n}"]`);
+  const send = async (move, delta, note) => {
+    box.querySelectorAll('button').forEach((b) => (b.disabled = true));
+    try {
+      const r = await post(`/vendor/inventory/${it.id}/adjustments`, { location_id: +f('loc').value, movement_type: move, quantity_delta: delta, note: note || null });
+      f('msg').innerHTML = `<div class="banner ok">${esc(MOVES[move].text)}: ${delta > 0 ? '+' : ''}${delta}. Now ${fmt(r.data.after_quantity)} at ${esc(locName(r.data.location_id))}.</div>`;
+      setTimeout(done, 700);
+    } catch (e) { f('msg').innerHTML = `<div class="banner err">${esc(e.message)}</div>`; box.querySelectorAll('button').forEach((b) => (b.disabled = false)); }
+  };
+  box.querySelectorAll('[data-quick]').forEach((b) => (b.onclick = () => {
+    const n = +b.dataset.quick;
+    n > 0 ? send('purchase_receipt', n, 'Scanner quick receive') : send('damage', n, 'Scanner quick remove');
+  }));
+  f('save').onclick = () => {
+    const m = MOVES[f('move').value]; let n = Math.trunc(+f('qty').value);
+    if (m.sign) n = Math.abs(n) * m.sign;
+    if (!n) { f('msg').innerHTML = '<div class="banner err">Enter a non-zero quantity.</div>'; return; }
+    if (m.note && !f('note').value.trim()) { f('msg').innerHTML = '<div class="banner err">Add a note for this reason.</div>'; return; }
+    send(f('move').value, n, f('note').value.trim());
+  };
+  // Any typing in a form holds the live scanner so the result under the user's hands is not replaced.
+  box.addEventListener('focusin', (e) => { if (e.target.matches('input, select')) scan.hold = true; });
+}
+
+/* ---------------- live camera recognition ---------------- */
+
+const scan = {
+  stream: null, timer: null, busy: false, hold: false,
+  prev: null, last: null, steady: 0, nextAt: 0,
+  SAMPLE_W: 48, SAMPLE_H: 36, TICK_MS: 250,
+  MOTION_MAX: 7,      // mean abs pixel diff between ticks below this = camera is still
+  STEADY_TICKS: 3,    // ~0.75s of stillness before sending
+  CHANGE_MIN: 14,     // the steady view must differ this much from the last recognised one
+  COOLDOWN_MS: 5500,  // stays under the server's 12 photos/minute limit
+};
+const sampler = Object.assign(document.createElement('canvas'), { width: scan.SAMPLE_W, height: scan.SAMPLE_H });
+const sctx = sampler.getContext('2d', { willReadFrequently: true });
+
+function camStatus(text, meter) {
+  $('cam-status').classList.remove('hidden');
+  $('cam-text').textContent = text;
+  $('cam-meter').style.width = `${Math.round((meter ?? 0) * 100)}%`;
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    $('cam-idle').textContent = 'Live camera is unavailable here (it needs HTTPS or localhost). Use “Use a photo” below.';
+    return;
+  }
+  try {
+    scan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+  } catch (e) {
+    $('cam-idle').textContent = e.name === 'NotAllowedError' ? 'Camera permission was denied. Allow it in the browser, or use a photo.' : `Could not start the camera (${e.name}).`;
+    return;
+  }
+  const v = $('video'); v.srcObject = scan.stream; await v.play().catch(() => {});
+  $('cam-idle').classList.add('hidden'); $('cam-toggle').textContent = 'Stop camera'; $('cam-snap').disabled = false;
+  scan.prev = null; scan.steady = 0;
+  scan.timer = setInterval(tick, scan.TICK_MS);
+  camStatus('Point at a product and hold steady');
+}
+
+function stopCamera() {
+  clearInterval(scan.timer); scan.timer = null;
+  scan.stream?.getTracks().forEach((t) => t.stop()); scan.stream = null;
+  $('video').srcObject = null;
+  $('cam-idle').textContent = 'Camera is off.'; $('cam-idle').classList.remove('hidden');
+  $('cam-status').classList.add('hidden'); $('cam').className = 'cam';
+  $('cam-toggle').textContent = 'Start camera'; $('cam-snap').disabled = true;
+}
+
+$('cam-toggle').onclick = () => (scan.stream ? stopCamera() : startCamera());
+$('cam-snap').onclick = () => { scan.hold = false; captureAndRecognise(); };
+document.addEventListener('visibilitychange', () => { if (document.hidden && scan.stream) stopCamera(); });
+
+/** Downscaled grayscale frame: cheap enough to diff four times a second on a phone. */
+function sample() {
+  const v = $('video');
+  if (!v.videoWidth) return null;
+  sctx.drawImage(v, 0, 0, scan.SAMPLE_W, scan.SAMPLE_H);
+  const d = sctx.getImageData(0, 0, scan.SAMPLE_W, scan.SAMPLE_H).data;
+  const g = new Uint8Array(scan.SAMPLE_W * scan.SAMPLE_H);
+  for (let i = 0; i < g.length; i++) g[i] = (d[i * 4] * 77 + d[i * 4 + 1] * 150 + d[i * 4 + 2] * 29) >> 8;
+  return g;
+}
+const diff = (a, b) => { if (!a || !b) return 255; let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s / a.length; };
+const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+
+function tick() {
+  const g = sample(); if (!g) return;
+  const motion = diff(g, scan.prev); scan.prev = g;
+  const cam = $('cam');
+  if (scan.busy) return;
+  if (!$('auto').checked) { cam.className = 'cam'; camStatus('Auto-recognise is off. Press “Recognise now”.'); return; }
+  if (scan.hold) { cam.className = 'cam'; camStatus('Paused on this result. Press “Scan next” to resume.'); return; }
+  if (mean(g) < 18) { scan.steady = 0; cam.className = 'cam'; camStatus('Too dark. Add light or move closer.'); return; }
+
+  scan.steady = motion < scan.MOTION_MAX ? scan.steady + 1 : 0;
+  const ready = scan.steady >= scan.STEADY_TICKS;
+  cam.className = 'cam' + (ready ? ' steady' : '');
+  if (!ready) { camStatus(motion < scan.MOTION_MAX ? 'Hold steady…' : 'Point at a product and hold steady', scan.steady / scan.STEADY_TICKS); return; }
+  if (diff(g, scan.last) < scan.CHANGE_MIN) { camStatus('Result shown. Show the next product to scan it.', 1); return; }
+  const wait = scan.nextAt - Date.now();
+  if (wait > 0) { camStatus(`Ready. Next recognition in ${Math.ceil(wait / 1000)}s (photo limit).`, 1); return; }
+  captureAndRecognise(g);
+}
+
+/** Full-resolution JPEG of the current frame, longest edge capped to keep uploads small. */
+function grabFrame() {
+  const v = $('video');
+  const scale = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
+  const c = Object.assign(document.createElement('canvas'), { width: Math.round(v.videoWidth * scale), height: Math.round(v.videoHeight * scale) });
+  c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+}
+
+async function captureAndRecognise(g) {
+  if (scan.busy || !scan.stream) return;
+  // Claim the slot before awaiting the encoder, or the next tick would send the same view again.
+  scan.busy = true; scan.last = g || sample();
+  const blob = await grabFrame();
+  scan.busy = false;
+  if (blob) await recognise(blob);
+}
+
+/** Phone photos can be 5-12 MB: shrink to the server's working size before upload. Falls back to the original if the browser cannot decode it. */
+async function shrinkPhoto(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size < 2_000_000 && /jpe?g|png|webp/.test(file.type)) return file;
+    const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * scale), height: Math.round(bmp.height * scale) });
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return (await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.88))) || file;
+  } catch { return file; }
+}
+
+$('file').onchange = async () => {
+  const f = $('file').files[0];
+  $('file').value = ''; // lets the same file be picked again
+  if (!f) return;
+  // A picked photo takes over: the live camera must not replace its result a few seconds later.
+  scan.hold = true;
+  while (scan.busy) await new Promise((r) => setTimeout(r, 200));
+  recognise(await shrinkPhoto(f), { fromPhoto: true });
+};
+
+async function recognise(blob, { fromPhoto = false } = {}) {
+  if (!can('ai.analyze')) return;
+  scan.busy = true; scan.nextAt = Date.now() + scan.COOLDOWN_MS;
+  $('cam').className = scan.stream ? 'cam busy' : 'cam';
+  if (scan.stream) camStatus('Recognising…', 1);
+  const out = $('scan-result');
+  // Show exactly what is being sent before the slow AI call, so a wrong frame is obvious straight away.
+  if (state.shotUrl) URL.revokeObjectURL(state.shotUrl);
+  state.shotUrl = URL.createObjectURL(blob);
+  out.innerHTML = `<h2>Result</h2>${shotHtml(state.shotUrl, true)}<div class="muted" style="margin-top:8px">Recognising product… this can take a few seconds.</div>`;
+  const form = new FormData(); form.append('image', blob, 'scan.jpg');
+  try {
+    const a = (await api('/vendor/ai/analyses', { method: 'POST', body: form, headers: { 'Idempotency-Key': 'inv-' + uuid() } })).data;
+    const ids = (a.candidates || []).map((c) => c.variant?.id).filter(Boolean);
+    const stocked = ids.length ? (await api(`/vendor/inventory?per_page=50&variant_ids=${ids.join(',')}`)).data : [];
+    renderScan(a, stocked, state.shotUrl);
+    // Keep watching after a camera frame: the change gate stops repeats, and forms set scan.hold while in use. A picked photo stays until "Scan next".
+    scan.hold = fromPhoto;
+  } catch (e) {
+    if (e.status === 429) scan.nextAt = Date.now() + (e.retryAfter || 30) * 1000;
+    out.innerHTML = `<h2>Result</h2>${shotHtml(state.shotUrl)}<div class="banner err" style="margin-top:8px">${esc(e.status === 429 ? 'Photo limit reached. The scanner will resume automatically.' : e.message)}</div>`;
+    const a = e.body?.error?.details?.analysis; if (a) renderScan(a, [], state.shotUrl);
+  }
+  scan.busy = false;
+}
+
+const shotHtml = (url, busy = false) => url ? `<div class="shot${busy ? ' busy' : ''}"><img src="${url}" alt="Image being recognised"></div>` : '';
+
+function renderScan(a, stocked, imgUrl) {
+  const x = a.extracted || {};
+  const conf = Math.round((a.overall_confidence ?? 0) * 100);
+  const byVariant = new Map(stocked.map((it) => [it.variant_id, it]));
+  const est = x.estimated_price_php ? `₱${fmt(x.estimated_price_php.min_php)} – ₱${fmt(x.estimated_price_php.max_php)} (AI estimate)` : null;
+  const rows = [['Name', x.name], ['Brand', x.brand], ['Model', x.model], ['Category', [x.category, x.subcategory].filter(Boolean).join(' › ')], ['Barcode', x.barcode_text], ['Pack of', x.pack_quantity], ['Estimated price', est]]
+    .filter(([, v]) => v != null && v !== '').map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  const cands = a.candidates || [];
+  const top = cands[0];
+  const topStocked = top?.variant && byVariant.get(top.variant.id);
+  const notHw = a.classification === 'not_hardware';
+
+  addHistory(a, topStocked, top);
+  $('scan-result').innerHTML = `
+    <div class="row between"><h2 style="margin:0">Result</h2><span class="badge ${esc(a.classification)}">${esc(label(a.classification))}</span></div>
+    ${a.is_mock ? `<div class="banner demo" style="margin-top:8px">${esc(a.provider_label)}</div>` : ''}
+    <div style="margin-top:10px">${shotHtml(imgUrl)}</div>
+    <div style="margin-top:10px"><strong>${esc(x.name || 'Unrecognised')}</strong><div class="muted">Confidence ${conf}%</div><div class="bar"><i style="width:${conf}%"></i></div></div>
+    ${(a.warnings || []).length ? `<div class="chips" style="margin-top:8px">${a.warnings.map((w) => `<span class="chip warn">${esc(typeof w === 'string' ? w : (w.message || w.code))}</span>`).join('')}</div>` : ''}
+    <dl>${rows}</dl>
+    ${notHw ? '<div class="banner err" style="margin-top:10px"><strong>Not a hardware product.</strong> This is not something your store carries, so nothing was matched.</div>'
+      : topStocked ? `<div class="banner ok" style="margin-top:10px">In stock: ${esc(topStocked.sku)} · ${fmt(topStocked.available)} available</div>`
+      : stocked.length ? '<div class="banner info" style="margin-top:10px">A similar item is in your stock, but it is not the best match. Check before adjusting.</div>'
+      : `<div class="banner info" style="margin-top:10px">Not in your inventory${cands.length ? '. Add a catalog match below if it is the same product.' : ' or the catalog.'}</div>`}
+    ${notHw ? '' : `<h3 style="margin-top:14px">Catalog matches (${cands.length})</h3>
+    ${cands.map((c, i) => candHtml(c, i, byVariant.get(c.variant?.id))).join('') || '<div class="muted">No catalog product matches this photo.</div>'}`}
+    ${can('inventory.create') && !notHw ? `<div class="row" style="margin-top:10px"><button class="secondary small" data-new>Not listed — add as a new product</button><button class="secondary small" data-reject>Wrong result — dismiss</button></div>` : ''}
+    <div class="row" style="margin-top:10px"><button data-next>Scan next</button></div>
+    <div id="scan-action"></div>`;
+
+  const root = $('scan-result');
+  root.querySelectorAll('[data-open]').forEach((b) => (b.onclick = () => { scan.hold = true; openItem(+b.dataset.open, $('scan-action')); }));
+  root.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => intakeForm(a, cands[+b.dataset.add])));
+  root.querySelector('[data-new]')?.addEventListener('click', () => intakeForm(a, null));
+  root.querySelector('[data-reject]')?.addEventListener('click', async () => {
+    try { await post(`/vendor/ai/analyses/${a.id}/confirm`, { decision: 'rejected' }); } catch (e) { if (e.status !== 409) return void ($('scan-action').innerHTML = `<div class="banner err">${esc(e.message)}</div>`); }
+    nextScan();
+  });
+  root.querySelector('[data-next]').onclick = nextScan;
+  // Stocked best match: open it straight away so +1 / −1 is one tap.
+  if (topStocked && can('inventory.adjust')) openItem(topStocked.id, $('scan-action'));
+}
+
+function candHtml(c, i, item) {
+  const p = c.product, v = c.variant;
+  const action = item ? `<button class="small" data-open="${item.id}">Open stock (${fmt(item.available)} available)</button>`
+    : v && can('inventory.create') ? `<button class="small secondary" data-add="${i}">Add to inventory</button>` : '';
+  return `<div class="cand ${item ? 'stocked' : ''}">
+    <div class="row between">
+      <div style="min-width:0"><strong>${esc(p.name)}</strong><div class="muted">${esc([p.brand, p.model_number, v?.name !== p.name ? v?.name : null].filter(Boolean).join(' · '))}</div></div>
+      <span class="badge ${esc(c.classification)}">${Math.round((c.score ?? 0) * 100)}%</span>
+    </div>
+    <div class="chips">
+      ${item ? `<span class="chip good">In stock as ${esc(item.sku)}</span>` : ''}
+      ${(c.matched_fields || []).map((f) => `<span class="chip good">✓ ${esc(label(f))}</span>`).join('')}
+      ${(c.mismatched_fields || []).map((f) => `<span class="chip bad">✗ ${esc(label(f))}</span>`).join('')}
+    </div>
+    ${action}
+  </div>`;
+}
+
+function nextScan() {
+  scan.hold = false; scan.last = null;
+  $('scan-action').innerHTML = '';
+  if (!scan.stream) $('scan-result').innerHTML = '<h2>Result</h2><div class="muted">Take another photo.</div>';
+}
+
+function addHistory(a, stocked, top) {
+  state.history.unshift({ name: a.extracted?.name || 'Unrecognised', sub: a.classification === 'not_hardware' ? 'Not hardware' : stocked ? `In stock · ${stocked.sku}` : top ? `Catalog match ${Math.round(top.score * 100)}%` : label(a.classification), at: new Date() });
+  state.history = state.history.slice(0, 12);
+  $('history-wrap').classList.remove('hidden');
+  $('history').innerHTML = state.history.map((h) => `<button disabled><strong>${esc(h.name)}</strong><span class="muted">${esc(h.sub)}</span><span class="muted">${h.at.toLocaleTimeString('en-PH', { timeStyle: 'short' })}</span></button>`).join('');
+}
+
+/** Confirm an AI suggestion (existing variant) or a brand-new catalog candidate, creating inventory + opening stock in one step. */
+async function intakeForm(a, c) {
+  scan.hold = true;
+  const x = a.extracted || {};
+  const box = $('scan-action');
+  if (!c && !state.categories) state.categories = (await api('/vendor/catalog/categories').catch(() => ({ data: [] }))).data;
+  const catGuess = (state.categories || []).find((k) => [x.subcategory, x.category].some((n) => n && k.name.toLowerCase() === String(n).toLowerCase()));
+  const estMid = x.estimated_price_php ? Math.round((x.estimated_price_php.min_php + x.estimated_price_php.max_php) / 2) : '';
+  const skuBase = (x.model || x.name || 'ITEM').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const stores = state.stores.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  box.innerHTML = `<div class="cand">
+    <h3>${c ? `Add ${esc(c.product.name)}${c.variant && c.variant.name !== c.product.name ? ' — ' + esc(c.variant.name) : ''}` : 'New product (sent to catalog review)'}</h3>
+    <div class="muted">Nothing is saved until you confirm. The AI suggestion and your edits are both recorded.</div>
+    ${c ? '' : `<div class="row">
+      <label style="flex:2 1 200px">Name <input data-f="name" maxlength="160" value="${esc(x.name)}"></label>
+      <label>Brand <input data-f="brand" maxlength="80" value="${esc(x.brand)}"></label>
+      <label>Model <input data-f="model" maxlength="80" value="${esc(x.model)}"></label>
+      <label>Category <select data-f="cat">${(state.categories || []).map((k) => `<option value="${k.id}" ${catGuess?.id === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></label>
+    </div>`}
+    <div class="row">
+      <label>Your SKU <input data-f="sku" maxlength="64" value="${esc(skuBase || 'ITEM')}"></label>
+      <label>Store <select data-f="store">${stores}</select></label>
+      <label>Cost (₱) <input data-f="cost" type="number" min="0" step="0.01" value="${estMid ? Math.round(estMid * 0.7) : ''}"></label>
+      <label>Selling price (₱) <input data-f="price" type="number" min="0.01" step="0.01" value="${estMid}"></label>
+      <label>Opening qty <input data-f="qty" type="number" min="0" step="1" value="1"></label>
+      <label>Reorder at <input data-f="reorder" type="number" min="0" step="1" value="2"></label>
+    </div>
+    <div class="row"><button data-f="ok">Confirm &amp; add to stock</button><button data-f="cancel" class="secondary">Cancel</button></div>
+    <div data-f="msg"></div></div>`;
+  const f = (n) => box.querySelector(`[data-f="${n}"]`);
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  f('cancel').onclick = () => { box.innerHTML = ''; scan.hold = false; };
+  f('ok').onclick = async () => {
+    const inventory = { tenant_sku: f('sku').value.trim(), store_id: +f('store').value, cost_cents: Math.round(+f('cost').value * 100), price_cents: Math.round(+f('price').value * 100), quantity: Math.trunc(+f('qty').value), reorder_threshold: Math.trunc(+f('reorder').value) };
+    const payload = c
+      ? { decision: ['exact_match', 'likely_same_product'].includes(c.classification) ? 'confirmed_existing' : 'selected_variant', variant_id: c.variant.id, inventory }
+      : { decision: 'created_candidate', inventory, new_product: { category_id: +f('cat').value, name: f('name').value.trim(), brand: f('brand').value.trim() || null, model_number: f('model').value.trim() || null, description: x.description || null } };
+    f('ok').disabled = true;
+    try {
+      const r = (await post(`/vendor/ai/analyses/${a.id}/confirm`, payload)).data;
+      $('scan-result').querySelectorAll('[data-add],[data-new],[data-reject]').forEach((b) => (b.disabled = true)); // one decision per photo
+      f('msg').innerHTML = `<div class="banner ok">Added to inventory as ${esc(inventory.tenant_sku)} with ${fmt(inventory.quantity)} in stock${c ? '' : '. The product is private to your business until a platform admin approves it'}.</div>`;
+      if (r.inventory_item_id) setTimeout(() => openItem(r.inventory_item_id, box), 900);
+    } catch (e) { f('msg').innerHTML = `<div class="banner err">${esc(e.message)}</div>`; f('ok').disabled = false; }
+  };
+}
+</script>
+</body>
+</html>

@@ -186,8 +186,10 @@ describe('Gemma provider', function () {
             return str_ends_with($req->url(), '/v1beta/models/gemma-4-26b-a4b-it:generateContent') && $req->hasHeader('x-goog-api-key', 'test-key')
                 && $part[0]['inline_data']['mime_type'] === 'image/jpeg' && base64_decode($part[0]['inline_data']['data'], true) !== false && str_contains($part[1]['text'], 'ONE JSON object');
         });
-        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json('data.provider'))->toBe('gemma')->and($r->json('data.model'))->toBe('gemma-4-26b-a4b-it')
-            ->and($r->json('data.provider_label'))->toContain('Live AI')
+        // provider/model are recorded for audit but never shown to clients
+        expect(AiAnalysis::query()->withoutGlobalScopes()->find($r->json('data.id'))->only(['provider', 'model']))->toBe(['provider' => 'gemma', 'model' => 'gemma-4-26b-a4b-it']);
+        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json())->not->toHaveKey('data.provider')->and(json_encode($r->json()))->not->toContain('gemma-4')
+            ->and($r->json('data.provider_label'))->toBe('AI recognition')
             ->and($r->json('data.extracted.attributes'))->toBe(['voltage_v' => 220])        // invalid keys / nested values dropped
             ->and($r->json('data.extracted.confidence.brand'))->toEqual(1.0)->and($r->json('data.extracted.confidence.model'))->toEqual(0.0) // clamped / non-numeric
             ->and($r->json('data.extracted.barcode_text'))->toBe('4800000100017')
@@ -258,8 +260,9 @@ describe('OpenAI-compatible provider', function () {
             return $req->url() === 'https://openrouter.ai/api/v1/chat/completions' && $req->hasHeader('Authorization', 'Bearer or-test-key') && $req['model'] === 'google/gemma-4-26b-a4b-it:free'
                 && $parts[0]['type'] === 'text' && str_starts_with($parts[1]['image_url']['url'], 'data:image/jpeg;base64,') && ! isset($req['response_format']);
         });
-        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json('data.provider'))->toBe('openai-compatible')->and($r->json('data.model'))->toBe('google/gemma-4-26b-a4b-it:free')
-            ->and($r->json('data.provider_label'))->toContain('Live AI')->and($r->json('data.extracted.model'))->toBe('HP1630')->and($r->json('data.candidates.0.variant.model_number'))->toBe('HP1630');
+        expect(AiAnalysis::query()->withoutGlobalScopes()->find($r->json('data.id'))->only(['provider', 'model']))->toBe(['provider' => 'openai-compatible', 'model' => 'google/gemma-4-26b-a4b-it:free']);
+        expect($r->json('data.is_mock'))->toBeFalse()->and($r->json())->not->toHaveKey('data.model')->and(json_encode($r->json()))->not->toContain('gemma-4-26b')
+            ->and($r->json('data.provider_label'))->toBe('AI recognition')->and($r->json('data.extracted.model'))->toBe('HP1630')->and($r->json('data.candidates.0.variant.model_number'))->toBe('HP1630');
         expect(json_encode($r->json()))->not->toContain('or-test-key');
     });
 

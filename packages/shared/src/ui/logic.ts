@@ -1,5 +1,5 @@
 /** Pure presentation rules (wording, thresholds, banner precedence, input validation). No React: unit-tested in Node. */
-import type { AvailabilityStatus, MatchClass } from "../api/types";
+import type { AnalysisClass, AvailabilityStatus } from "../api/types";
 import { formatAge, formatPeso, parsePesoToCents } from "../format";
 import type { IconName } from "./icons";
 
@@ -18,13 +18,14 @@ export const CONFIDENCE_META: Record<ConfidenceLevel, { label: string; color: "s
   low: { label: "Low", color: "failure", icon: "alert", advice: "Take a clearer photo or enter the details yourself." },
 };
 
-export const MATCH_META: Record<MatchClass, { label: string; color: "success" | "info" | "indigo" | "warning" | "purple" | "failure"; icon: IconName; hint: string }> = {
+export const MATCH_META: Record<AnalysisClass, { label: string; color: "success" | "info" | "indigo" | "warning" | "purple" | "failure"; icon: IconName; hint: string }> = {
   exact_match: { label: "Exact match", color: "success", icon: "checks", hint: "This is already in the catalog." },
   likely_same_product: { label: "Likely same product", color: "info", icon: "check", hint: "Looks like an existing product. Please confirm." },
   likely_variant: { label: "Likely variant", color: "indigo", icon: "list", hint: "Same product, different size, color or pack. Pick the right variant." },
   possible_duplicate: { label: "Possible duplicate", color: "warning", icon: "alert", hint: "Similar items exist. Check before adding another." },
   new_product_candidate: { label: "New product", color: "purple", icon: "plus", hint: "Nothing similar found. You can add it as new." },
   insufficient_confidence: { label: "Not enough confidence", color: "failure", icon: "info", hint: "Try another photo or search by name or barcode." },
+  not_hardware: { label: "Not a hardware product", color: "failure", icon: "alert", hint: "This is not something a hardware store sells, so nothing was matched." },
 };
 
 // ───────── stock ─────────
