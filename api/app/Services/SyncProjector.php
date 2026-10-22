@@ -12,6 +12,7 @@ use App\Http\Resources\StoreResource;
 use App\Http\Resources\TenantListingResource;
 use App\Models\Category;
 use App\Models\InventoryItem;
+use App\Models\InventoryLocation;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
@@ -87,7 +88,8 @@ class SyncProjector
             'listing' => $vendor
                 ? $store(StockService::withAvailability(TenantListing::query()->forTenant($ctx))->with(['variant.barcodes', 'product.category']))
                 : StockService::withAvailability(MarketplaceSearch::liveListings())->with(['store.tenant', 'variant.barcodes']),
-            'inventory_item' => $vendor ? InventoryItem::query()->forTenant($ctx)->with(['variant.product', 'variant.barcodes', 'snapshots']) : null,
+            'inventory_item' => $vendor ? InventoryItem::query()->forTenant($ctx)->with(['variant.product', 'variant.barcodes', 'snapshots' => fn ($s) => $ctx->storeId === null ? $s
+                : $s->whereIn('location_id', InventoryLocation::query()->forTenant($ctx)->where('store_id', $ctx->storeId)->select('id'))]) : null,
             'order' => match (true) {
                 $vendor => $ctx->can('orders.view') ? $store(Order::query()->forTenant($ctx)->with(['items', 'reservation'])) : null,
                 $kind === 'customer' => Order::query()->withoutGlobalScopes()->where('customer_id', $userId)->with(['items', 'reservation', 'store.tenant']),

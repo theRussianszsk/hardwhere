@@ -37,6 +37,10 @@ final class ApiErrors
             }
 
             // 23514 = check_violation: the database refused an impossible stock state; surface it as a conflict, not a crash.
+            if ($e->getCode() === '23503') { // foreign_key_violation: a referenced row is missing or belongs to another tenant
+                return $json(422, 'invalid_reference', 'One of the referenced records does not exist.');
+            }
+
             return $e->getCode() === '23514' ? $json(409, 'constraint_violation', 'The change was rejected because it would put data in an invalid state.') : null;
         });
         $exceptions->render(fn (HttpExceptionInterface $e, Request $r) => $api($r) ? $json($e->getStatusCode(), 'http_error', $e->getMessage() ?: 'Request failed.') : null);

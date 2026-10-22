@@ -9,7 +9,7 @@ class StaffRequest extends ApiRequest
     {
         return [
             'email' => ['required', 'email'],
-            'name' => ['required_without:user_exists', 'nullable', 'string', 'max:120'],
+            'name' => ['nullable', 'string', 'max:120'], // required only when the account does not exist yet (checked in the controller)
             'password' => ['nullable', 'string', 'min:10'],
             'role' => ['required', 'in:store_manager,inventory_manager,cashier,marketplace_manager,staff'],
             'store_id' => ['nullable', 'integer'],

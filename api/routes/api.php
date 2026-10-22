@@ -107,7 +107,7 @@ Route::prefix('v1')->group(function () {
         Route::get('sync/changes', [SyncController::class, 'changes'])->defaults('kind', 'vendor');
     });
 
-    Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:platform', 'throttle:api'])->group(function () {
+    Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:platform', 'platform_admin', 'throttle:api'])->group(function () {
         Route::get('health', [PlatformController::class, 'health']);
         Route::get('tenants', [PlatformController::class, 'tenants']);
         Route::post('tenants', [PlatformController::class, 'createTenant']);
