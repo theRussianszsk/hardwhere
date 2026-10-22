@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll } from "vitest";
 import { createChangeBus, type ChangeEvent } from "../../src/contracts";
 import { migrate } from "../../src/db/migrations";
-import { createNodeSqlitePort, type NodeSqlitePort } from "./nodePort";
+import { createNodeSqlitePort, openFilePorts, type NodeSqlitePort } from "./nodePort";
 
 export const T0 = Date.UTC(2026, 0, 1, 8, 0, 0);
 
@@ -17,7 +17,11 @@ export function makeClock(start = T0) {
 /** Temp directory for file-backed databases ("forced termination" tests); removed after the file's tests. */
 export function useTmpDir() {
   const dir = mkdtempSync(join(tmpdir(), "hw-shared-"));
-  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  afterAll(() => {
+    // Tests leave the reopened "second process" database open; on Windows an open file cannot be deleted (EPERM).
+    for (const p of openFilePorts) if (p.path.startsWith(dir)) p.kill();
+    rmSync(dir, { recursive: true, force: true });
+  });
   return (name: string) => join(dir, name);
 }
 
