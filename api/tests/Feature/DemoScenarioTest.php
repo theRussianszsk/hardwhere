@@ -18,7 +18,7 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
 
     // 1. Vendor staff signs in to Tenant A
     $staff = World::login($this, 'staff.a@hardwhere.test', 'vendor', 'dela-cruz-hardware');
-    $storeId = collect($this->getJson('/api/v1/vendor/stores', $staff)->assertOk()->json('data'))->firstWhere('code', 'DCH-QC')['id'];
+    $storeId = collect($this->getJson('/api/v1/vendor/stores', $staff)->assertOk()->json('data'))->firstWhere('code', 'DCH-MB')['id'];
     $vendorCursor = $this->getJson('/api/v1/vendor/sync/snapshot?entity=listing', $staff)->assertOk()->json('cursor');
 
     // 2-4. Photograph an unbarcoded power tool; Gemma-abstraction returns attributes + candidate matches (labelled demo AI)
@@ -56,7 +56,7 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
     // 8-10. Customer searches the shared catalog; sees Tenant A among stores with price, availability, store info, directions
     $search = $this->getJson('/api/v1/public/search?q=hammer drill')->assertOk();
     expect(collect($search->json('data'))->pluck('id'))->toContain($productId);
-    $stores = $this->getJson("/api/v1/public/products/$productId/listings?lat=14.63&lng=121.04")->assertOk();
+    $stores = $this->getJson("/api/v1/public/products/$productId/listings?lat=10.3200&lng=123.9100")->assertOk(); // a buyer in Mabolo, Cebu City
     $mine = collect($stores->json('data'))->first(fn ($l) => $l['sku'] === 'DCH-HP1630');
     expect($mine)->not->toBeNull()
         ->and($mine['price_cents'])->toBe(449900)
@@ -67,6 +67,8 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
         ->and(collect($stores->json('data'))->pluck('store.business_name')->unique()->count())->toBeGreaterThan(1) // same product at other tenants
         ->and(json_encode($stores->json()))->not->toContain('cost_cents');
     expect($stores->json('meta.server_time'))->not->toBeEmpty();
+    $names = collect($stores->json('data'))->pluck('store.business_name');
+    expect($names->first())->toBe('Dela Cruz Hardware')->and($names->last())->toBe('Kamuning Hardware')->and($names)->not->toContain('Old Pier Hardware');
 
     // customer photo search also resolves to the shared canonical product
     $customer = World::login($this, 'ana.customer@hardwhere.test', 'customer');
@@ -94,7 +96,7 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
     $this->postJson("/api/v1/vendor/inventory/$itemId/adjustments", ['location_id' => $locationId, 'movement_type' => 'purchase_receipt', 'quantity_delta' => 2, 'note' => 'Restock'], $inv + idem('scn-restock'))->assertCreated();
     $sale = $this->postJson('/api/v1/vendor/pos/checkout', $cart, $cashier + idem('scn-sale-2'))->assertCreated();
     expect($sale->json('data.total_cents'))->toBe(449900)->and($sale->json('data.change_cents'))->toBe(50100)->and($sale->json('data.items'))->toHaveCount(1)
-        ->and($sale->json('data.receipt_no'))->toStartWith('DCH-QC-');
+        ->and($sale->json('data.receipt_no'))->toStartWith('DCH-MB-');
     $snap->refresh();
     expect([$snap->on_hand, $snap->reserved])->toBe([2, 1]); // 1 + 2 received - 1 sold; reservation untouched
     expect(StockLedgerEntry::query()->withoutGlobalScopes()->where('inventory_item_id', $itemId)->where('movement_type', 'sale')->count())->toBe(1);
@@ -122,10 +124,10 @@ it('runs the full vendor -> customer -> POS -> isolation demo scenario', functio
     $this->getJson('/api/v1/vendor/sales/'.$sale->json('data.id'), $b)->assertNotFound();
     expect(json_encode($this->getJson('/api/v1/vendor/inventory', $b)->json()))->not->toContain('DCH-')
         ->and(json_encode($this->getJson('/api/v1/vendor/staff', $b)->json()))->not->toContain('.a@hardwhere.test')->toContain('owner.b@hardwhere.test')
-        ->and(json_encode($this->getJson('/api/v1/vendor/sales', $b)->json()))->not->toContain('DCH-QC');
+        ->and(json_encode($this->getJson('/api/v1/vendor/sales', $b)->json()))->not->toContain('DCH-MB');
 
     // 18. The canonical product is still shared: Tenant B stocks the same product under its own SKU and price
     $bItems = collect($this->getJson('/api/v1/vendor/inventory?q=HP1630', $b)->json('data'));
     expect($bItems->pluck('sku'))->toContain('MBS-0001')
-        ->and(InventoryItem::query()->withoutGlobalScopes()->where('variant_id', $variantId)->pluck('tenant_id')->sort()->values()->all())->toBe($tenantIds->sort()->values()->all()); // A (new), B and C
+        ->and(InventoryItem::query()->withoutGlobalScopes()->where('variant_id', $variantId)->pluck('tenant_id')->sort()->values()->all())->toBe($tenantIds->only(['dela-cruz-hardware', 'mabini-builders', 'visayas-tools', 'kamuning-hardware'])->sort()->values()->all()); // A (new), B, C and the Manila store
 });

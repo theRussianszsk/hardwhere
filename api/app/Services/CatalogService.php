@@ -94,7 +94,7 @@ class CatalogService
         $category ??= $p->category;
 
         return Text::normalize(implode(' ', array_filter([
-            $p->brand, $p->manufacturer, $p->name, $p->model_number, $p->product_type, $category?->name, ...($p->synonyms ?? []),
+            $p->brand, $p->manufacturer, $p->name, $p->model_number, $p->product_type, $category?->name, $category?->parent?->name, ...($p->synonyms ?? []),
         ])));
     }
 

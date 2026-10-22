@@ -21,7 +21,7 @@ final class World
 {
     public static function catalog(): array
     {
-        app(CatalogSeeder::class)->run(app(\App\Services\CatalogService::class));
+        app(CatalogSeeder::class)->seedCatalog(app(\App\Services\CatalogService::class), coreOnly: true);
 
         return CatalogSeeder::$refs;
     }
