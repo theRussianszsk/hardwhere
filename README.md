@@ -17,6 +17,24 @@ Two mobile apps and one API for hardware stores:
 > token lives in `sessionStorage` (development only). Gemma 4 is wired but **not live-verified** (no API key); the demo uses a
 > clearly-labelled deterministic mock.
 
+## Slides
+https://drive.google.com/file/d/1U-Ku0Sc_hNlbmDZKJe7fjSY68P0wWSTY/view?usp=sharing
+
+Same deck in this repository: [inventOS_pitch_slides_4x3.pdf](inventOS_pitch_slides_4x3.pdf)
+
+## Business plan
+**Problem:** Philippine neighbourhood hardware stores sell thousands of spec-sensitive items, and most have no barcode: loose nails, PVC fittings, bolts, cut lumber, repacked sand. Stock lives in notebooks or the owner's memory, so owners do not know what is low or not selling. Buyers who need an exact part today (a 20A breaker, an M10 bolt) call or drive from store to store, because online marketplaces deliver in days.
+
+**Target users:** Independent hardware stores with 1–3 branches and 1–10 staff, starting with 10 pilot stores in Cebu City and Mandaue. Their buyers (contractors, foremen, electricians, plumbers, homeowners) use the customer app for free.
+
+**Solution and value:** Staff photograph a product instead of scanning a barcode. Gemma 4 reads the brand, model and specs, proposes the catalog match, and a person confirms. Sales then update stock atomically, and the same live stock feeds a marketplace where buyers compare nearby stores by price, availability and distance, and reserve. Variants such as 720W vs 840W grinders are never merged.
+
+**Revenue / sustainability:** Free Starter plan (300 SKUs, 50 AI intakes a month); Pro at ₱799/month (unlimited SKUs, marketplace listing); Multi-branch at ₱1,999/month. Later: ₱2,500 done-for-you shelf onboarding and featured listings. AI cost is small: about ₱0.02 per photo in our live tests.
+
+**Competition:** Notebooks and Excel are free but give no live stock. Loyverse and local POS systems (UTAK, StoreHub, about ₱1,500–2,300/month) are barcode-centric and built mainly for food and beverage. Shopee and Lazada deliver in days; big-box stores are far away. We combine AI photo intake for unbarcoded hardware with local discovery fed by daily POS use.
+
+**Next steps:** Run the 10-store Cebu pilot and measure intake accuracy; ship native Android builds; add bookkeeper reports (inventory valuation, cost of goods sold, CSV export) for the partner channel.
+
 ## Architecture
 
 ```
