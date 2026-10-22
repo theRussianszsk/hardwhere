@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ApiError, humanizeError, newId, useActive, useAuth, useOnlineQuery, useServices,
-  type AiAnalysisDto, type AiAnalyzePayload, type ConfirmIntakeInput, type ExtractedProduct, type MatchCandidateDto,
+  useNow, type AiAnalysisDto, type AiAnalyzePayload, type ConfirmIntakeInput, type ExtractedProduct, type MatchCandidateDto,
 } from "@hardwhere/shared";
 import { PhotoThumb } from "@hardwhere/shared/ui";
 import { lastErrorText } from "../lib/CommandStatus";
