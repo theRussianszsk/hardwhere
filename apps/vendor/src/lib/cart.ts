@@ -29,6 +29,12 @@ export const CHECKOUT_REFUSALS = ["stock_unavailable", "price_changed"];
 export const checkoutUnresolved = (it: OutboxItem | null | undefined) =>
   !!it && (it.state === "queued" || it.state === "sending" || (it.state === "needs_review" && !CHECKOUT_REFUSALS.includes(it.lastError?.code ?? "")));
 
+/** A discount can never exceed the line: lowering the quantity or price shrinks it, or the server refuses the sale (discount_too_large). */
+export function patchLine(line: CartLine, p: Partial<CartLine>): CartLine {
+  const next = { ...line, ...p };
+  return { ...next, discountCents: Math.max(0, Math.min(next.discountCents, next.unitPriceCents * next.qty)) };
+}
+
 export function cartTotals(lines: CartLine[], vatRateBps: number) {
   const gross = lines.reduce((s, l) => s + l.unitPriceCents * l.qty, 0);
   const discount = lines.reduce((s, l) => s + l.discountCents, 0);
@@ -57,7 +63,7 @@ export function useCart() {
     if (i >= 0) return { ...c, lines: c.lines.map((x, j) => (j === i ? { ...x, qty: Math.min(9999, x.qty + 1) } : x)) };
     return { ...c, storeId: c.storeId ?? l.store_id, lines: [...c.lines, { listingId: l.id, inventoryItemId: l.inventory_item_id, sku: l.sku, name: listingName(l), unitPriceCents: listingPrice(l), qty: 1, discountCents: 0 }] };
   }), [edit]);
-  const patch = useCallback((listingId: number, p: Partial<CartLine>) => edit((c) => ({ ...c, lines: c.lines.map((x) => (x.listingId === listingId ? { ...x, ...p } : x)) })), [edit]);
+  const patch = useCallback((listingId: number, p: Partial<CartLine>) => edit((c) => ({ ...c, lines: c.lines.map((x) => (x.listingId === listingId ? patchLine(x, p) : x)) })), [edit]);
   const remove = useCallback((listingId: number) => edit((c) => ({ ...c, lines: c.lines.filter((x) => x.listingId !== listingId) })), [edit]);
   const setStore = useCallback((storeId: number) => edit((c) => ({ ...c, storeId })), [edit]);
   const setKey = useCallback((checkoutKey: string | null) => set((c) => ({ ...c, checkoutKey })), [set]);
