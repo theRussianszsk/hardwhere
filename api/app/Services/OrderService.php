@@ -7,9 +7,11 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Reservation;
 use App\Models\ReservationLine;
+use App\Models\StockSnapshot;
 use App\Models\TenantListing;
 use App\Models\User;
 use App\Support\ApiException;
+use Illuminate\Support\Collection;
 
 /** Marketplace ordering. Every order atomically reserves stock; there is no "soft" order that holds nothing. */
 class OrderService
@@ -108,7 +110,7 @@ class OrderService
                 'quantity' => $line['quantity'], 'unit_price_cents' => $unit, 'line_total_cents' => $unit * $line['quantity'],
             ]);
 
-            foreach ($this->stock->allocate($locked, $l->inventory_item_id, $line['quantity'], $l->stock_buffer) as ['snapshot' => $snap, 'quantity' => $take]) {
+            foreach ($this->allocate($locked, $l, $line['quantity']) as ['snapshot' => $snap, 'quantity' => $take]) {
                 $this->stock->move($snap, 0, $take, 'reservation', $customer->id, 'order', $order->id, null, $l->id);
                 ReservationLine::create([
                     'tenant_id' => $order->tenant_id, 'reservation_id' => $reservation->id, 'order_item_id' => $item->id,
@@ -124,6 +126,28 @@ class OrderService
         $this->audit->record('order.placed', $order->tenant_id, $order, ['total_cents' => $subtotal], $customer->id);
 
         return $order->load('items', 'reservation');
+    }
+
+    /**
+     * StockService::allocate, with a customer-safe 409: the listing instead of the internal item id, and the exact
+     * available count only when the store shows exact stock (otherwise just the public availability bucket).
+     *
+     * @param  Collection<int, StockSnapshot>  $locked
+     * @return list<array{snapshot: StockSnapshot, quantity: int}>
+     */
+    private function allocate(Collection $locked, TenantListing $l, int $quantity): array
+    {
+        try {
+            return $this->stock->allocate($locked, $l->inventory_item_id, $quantity, $l->stock_buffer);
+        } catch (ApiException $e) {
+            if ($e->errorCode !== 'stock_unavailable') {
+                throw $e;
+            }
+            $available = (int) $e->details['available'];
+            $public = MarketplaceSearch::availability($available, $l->show_exact_stock);
+            throw ApiException::conflict('stock_unavailable', $e->getMessage(), ['listing_id' => $l->id, 'requested' => $quantity, 'availability' => $public['status']]
+                + ($l->show_exact_stock ? ['available' => $available] : []));
+        }
     }
 
     /** Listings a customer may buy: published, public, live store, active tenant. @param list<int> $ids */

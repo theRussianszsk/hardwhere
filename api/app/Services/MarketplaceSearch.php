@@ -211,11 +211,11 @@ class MarketplaceSearch
         return 6371 * 2 * asin(min(1, sqrt($a)));
     }
 
-    /** Customer-facing stock bucket; exact counts only when the store opted in. @return array{status: string, quantity: ?int} */
+    /** Customer-facing stock bucket; exact counts only when the store opted in (low stock included). @return array{status: string, quantity: ?int} */
     public static function availability(int $available, bool $showExact): array
     {
         $status = $available <= 0 ? 'out_of_stock' : ($available <= config('hardwhere.marketplace.low_stock_threshold') ? 'low_stock' : 'in_stock');
 
-        return ['status' => $status, 'quantity' => $showExact || $status === 'low_stock' ? $available : null];
+        return ['status' => $status, 'quantity' => $showExact ? max(0, $available) : null];
     }
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   COMMAND, formatPeso, newId, normalizePhMobile, useActive, useAuth, useOutbox,
-  type FulfillmentType, type OrderDto, type OrderPlacePayload, type PlaceOrderInput,
+  type FulfillmentType, type OrderDto, type OrderPlacePayload, type OrderStockConflictDetails, type PlaceOrderInput,
 } from "@hardwhere/shared";
 import { useCart } from "../cart";
 import { Btn, Card, ConfirmDialog, EmptyState, FormField, LoadingState, Money, Notice, StatusPill, cx, inputCls } from "../components/ui";
@@ -201,17 +201,23 @@ export function AttemptScreen() {
     setBusy(true);
     try { await active.store.outbox.retryNow(id); } finally { setBusy(false); }
   };
-  const fixAndRetry = async (adjustTo?: number) => {
+  const fixAndRetry = async (adjustTo?: number, listingId?: number) => {
     if (!active) return;
-    if (adjustTo != null && payload && payload.input.items.length === 1) {
-      const lid = payload.input.items[0].listing_id;
+    const lid = listingId ?? (payload && payload.input.items.length === 1 ? payload.input.items[0].listing_id : undefined);
+    if (adjustTo != null && lid != null) {
       if (adjustTo > 0) cart.setQty(lid, adjustTo); else cart.remove(lid);
     }
     await active.store.outbox.discard(id); // definitely not placed: a corrected order gets a NEW key
     nav(storeId ? `/checkout/${storeId}` : "/cart", { replace: true });
   };
 
-  const available = typeof details.available === "number" ? details.available : null;
+  // the server sends an exact count only for stores that show exact stock; otherwise just the public availability bucket
+  const stock = err?.code === "stock_unavailable" ? (details as Partial<OrderStockConflictDetails>) : {};
+  const available = typeof stock.available === "number" ? stock.available : null;
+  const shortId = typeof stock.listing_id === "number" ? stock.listing_id : undefined;
+  const shortSnap = cart.lines.find((l) => l.listing_id === shortId)?.snap;
+  const shortName = shortSnap ? (shortSnap.title ?? shortSnap.sku) : "An item";
+  const asked = typeof stock.requested === "number" ? ` (you asked for ${stock.requested})` : "";
   const stage2 = order ? "done" : definite ? "failed" : item.state === "needs_review" ? "unknown" : "wait";
 
   return (
@@ -245,8 +251,14 @@ export function AttemptScreen() {
             <div className="flex items-center gap-2"><StatusPill status="rejected" label="Not reserved" /></div>
             {err?.code === "stock_unavailable" ? (
               <>
-                <p className="text-sm text-danger-ink">{available != null ? `Only ${available} ${available === 1 ? "is" : "are"} available right now` : "There isn't enough stock right now"}{typeof details.requested === "number" ? ` (you asked for ${details.requested})` : ""}. Nothing was reserved.</p>
-                {payload && payload.input.items.length === 1 && available != null && available > 0 && <Btn block onClick={() => void fixAndRetry(available)}>Order {available} instead</Btn>}
+                <p className="text-sm text-danger-ink">
+                  {available != null ? `${shortName}: only ${available} ${available === 1 ? "is" : "are"} available right now${asked}.`
+                    : stock.availability === "out_of_stock" ? `${shortName} is out of stock right now.`
+                    : stock.availability === "low_stock" ? `${shortName}: only a few are left, fewer than you asked for${asked}.`
+                    : `${shortName}: the store doesn't have that many available right now${asked}.`} Nothing was reserved.
+                </p>
+                {available != null && available > 0 && (shortId != null || payload?.input.items.length === 1) && <Btn block onClick={() => void fixAndRetry(available, shortId)}>Order {available} instead</Btn>}
+                {stock.availability === "out_of_stock" && shortId != null && <Btn block onClick={() => void fixAndRetry(0, shortId)}>Remove it and review my cart</Btn>}
                 <Btn block variant="secondary" onClick={() => void fixAndRetry()}>Review my cart</Btn>
               </>
             ) : err?.code === "price_changed" ? (

@@ -21,7 +21,7 @@ it('shows the same canonical product with each tenant\'s own price, SKU and avai
     $by = collect($r->json('data'))->keyBy(fn ($l) => $l['store']['business_name']);
     expect($by)->toHaveCount(2)->and($by['Alpha Hardware']['price_cents'])->toBe(35000)->and($by['Bravo Hardware']['price_cents'])->toBe(32900)
         ->and($by['Alpha Hardware']['sku'])->not->toBe($by['Bravo Hardware']['sku'])
-        ->and($by['Alpha Hardware']['availability']['status'])->toBe('in_stock')->and($by['Bravo Hardware']['availability'])->toBe(['status' => 'low_stock', 'quantity' => 3]);
+        ->and($by['Alpha Hardware']['availability']['status'])->toBe('in_stock')->and($by['Bravo Hardware']['availability'])->toBe(['status' => 'low_stock', 'quantity' => null]); // 3 left: low, but the store hides exact counts
 });
 
 it('never exposes cost, margin, supplier, staff, or exact private stock', function () {
