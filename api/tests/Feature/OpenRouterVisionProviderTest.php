@@ -11,6 +11,7 @@ beforeEach(function () {
 test('openrouter provider sends the image and validates the model output', function () {
     Http::fake(['openrouter.test/*' => Http::response(['choices' => [['message' => ['content' => "```json\n".json_encode([
         'name' => 'Claw Hammer', 'brand' => 'Stanley', 'model' => '51-188', 'category' => 'Hand Tools', 'attributes' => ['weight_oz' => 16],
+        'product_type' => 'claw hammer', 'material' => 'steel head, fibreglass handle', 'estimated_price_php' => ['min' => 450, 'max' => 800],
         'confidence' => ['name' => 0.9, 'brand' => 0.9, 'model' => 0.8], 'overall_confidence' => 0.88, 'image_sufficient' => true,
     ])."\n```"]]]])]);
 
@@ -18,7 +19,9 @@ test('openrouter provider sends the image and validates the model output', funct
 
     expect($result->isMock)->toBeFalse()
         ->and($result->provider)->toBe('openrouter')
-        ->and($result->extraction->brand)->toBe('Stanley');
+        ->and($result->extraction->brand)->toBe('Stanley')
+        ->and($result->extraction->productType)->toBe('claw hammer')
+        ->and($result->extraction->estimatedPricePhp)->toBe(['min_php' => 450, 'max_php' => 800]);
 
     Http::assertSent(fn ($r) => $r->url() === 'https://openrouter.test/api/v1/chat/completions'
         && $r['model'] === 'google/gemma-4-26b-a4b-it'

@@ -15,10 +15,13 @@ class GemmaVisionProvider implements VisionProvider
     public const PROMPT = <<<'TXT'
 You identify hardware-store products (Philippines) from one photo. Reply with ONE JSON object and nothing else, using exactly these keys:
 {"name": string|null, "brand": string|null, "model": string|null, "part_number": string|null, "category": string|null,
+ "subcategory": string|null, "product_type": string|null (e.g. "cordless drill", "claw hammer", "wood screw"), "material": string|null (build/material, e.g. "steel", "PVC", "zinc-plated"),
+ "description": string|null (one short sentence), "estimated_price_php": {"min": integer, "max": integer}|null (typical Philippine retail price range in whole pesos; a rough estimate, null if unsure),
  "attributes": {snake_case_key: number|string} (e.g. voltage_v, wattage_w, diameter_mm, length_mm, size, color, material, thread_size),
  "pack_quantity": integer|null, "barcode_text": string|null (digits only, only if clearly legible),
  "confidence": {"name": 0-1, "brand": 0-1, "model": 0-1, "category": 0-1, "attributes": 0-1, "barcode": 0-1},
  "overall_confidence": 0-1, "image_sufficient": boolean, "notes": [string]}
+Identify whatever product is visible, even if it is not hardware: fill name, brand and category from what you can see (for example a printed logo or label) and add a note such as "Not a hardware product" when it is not one. Set image_sufficient to false only when the photo is too blurry, dark or cropped to identify anything.
 Use null for anything you cannot read or see. Never guess a brand or model number; lower the confidence instead.
 TXT;
 

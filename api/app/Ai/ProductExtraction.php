@@ -9,6 +9,7 @@ final readonly class ProductExtraction
      * @param  array<string, scalar>  $attributes  e.g. voltage_v => 220, pack_quantity => 100
      * @param  array<string, float>  $confidence  per field, 0..1 (keys: name, brand, model, category, attributes, barcode)
      * @param  list<string>  $notes
+     * @param  array{min_php: int, max_php: int}|null  $estimatedPricePhp  a model guess in whole pesos, never a quote
      */
     public function __construct(
         public ?string $name,
@@ -23,6 +24,11 @@ final readonly class ProductExtraction
         public float $overallConfidence,
         public bool $imageSufficient = true,
         public array $notes = [],
+        public ?string $productType = null,
+        public ?string $subcategory = null,
+        public ?string $material = null,
+        public ?string $description = null,
+        public ?array $estimatedPricePhp = null,
     ) {}
 
     public function conf(string $field): float
@@ -38,6 +44,8 @@ final readonly class ProductExtraction
             'category' => $this->category, 'attributes' => $this->attributes, 'pack_quantity' => $this->packQuantity,
             'barcode_text' => $this->barcodeText, 'confidence' => $this->confidence, 'overall_confidence' => $this->overallConfidence,
             'image_sufficient' => $this->imageSufficient, 'notes' => $this->notes,
+            'product_type' => $this->productType, 'subcategory' => $this->subcategory, 'material' => $this->material,
+            'description' => $this->description, 'estimated_price_php' => $this->estimatedPricePhp,
         ];
     }
 
@@ -61,6 +69,11 @@ final readonly class ProductExtraction
             is_string($k) && $confidence[$k] = $clamp($v);
         }
 
+        $price = is_array($raw['estimated_price_php'] ?? null) ? $raw['estimated_price_php'] : [];
+        $min = is_numeric($price['min'] ?? null) ? (int) round((float) $price['min']) : null;
+        $max = is_numeric($price['max'] ?? null) ? (int) round((float) $price['max']) : null;
+        $estimate = $min !== null && $max !== null && $min >= 0 && $max >= $min && $max <= 10_000_000 ? ['min_php' => $min, 'max_php' => $max] : null;
+
         $barcode = $str($raw['barcode_text'] ?? null, 40);
         $barcode = $barcode ? preg_replace('/\D+/', '', $barcode) : null;
 
@@ -73,6 +86,8 @@ final readonly class ProductExtraction
             overallConfidence: $clamp($raw['overall_confidence'] ?? 0),
             imageSufficient: ! array_key_exists('image_sufficient', $raw) || (bool) $raw['image_sufficient'],
             notes: array_values(array_filter(array_map(fn ($n) => $str($n, 200), is_array($raw['notes'] ?? null) ? array_slice($raw['notes'], 0, 5) : []))),
+            productType: $str($raw['product_type'] ?? null, 80), subcategory: $str($raw['subcategory'] ?? null, 80),
+            material: $str($raw['material'] ?? null, 80), description: $str($raw['description'] ?? null, 300), estimatedPricePhp: $estimate,
         );
     }
 }
