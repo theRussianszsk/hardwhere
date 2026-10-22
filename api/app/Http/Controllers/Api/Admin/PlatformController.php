@@ -83,7 +83,9 @@ class PlatformController extends Controller
         }
 
         return response()->json(['data' => [
-            'database' => $db ? 'ok' : 'down', 'ai_provider' => config('hardwhere.ai.provider'), 'ai_live' => match (config('hardwhere.ai.provider')) { 'gemma' => (bool) config('hardwhere.ai.gemma.api_key'), 'openrouter' => (bool) config('hardwhere.ai.openrouter.api_key'), default => false },
+            'database' => $db ? 'ok' : 'down', 'ai_provider' => config('hardwhere.ai.provider'), 'ai_live' => match (config('hardwhere.ai.provider')) {
+                'gemma' => (bool) config('hardwhere.ai.gemma.api_key'), 'openrouter' => (bool) config('hardwhere.ai.openrouter.api_key'), default => false
+            },
             'tenants' => Tenant::query()->count(), 'stores' => Store::query()->withoutGlobalScopes()->count(), 'candidate_products' => Product::query()->where('status', 'candidate')->count(),
             'locations' => InventoryLocation::query()->withoutGlobalScopes()->count(), 'server_time' => now()->toIso8601String(),
         ]]);

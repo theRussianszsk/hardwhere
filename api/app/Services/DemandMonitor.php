@@ -48,12 +48,12 @@ class DemandMonitor
         sort($words);
         $top = $results->items()[0] ?? null;
         $product = $results->total() === 1 ? $top : null;
-        $categoryId = $product?->category_id
+        $categoryId = $product->category_id
             ?? (! empty($filters['category']) ? Category::query()->where('slug', $filters['category'])->value('id') : null)
             ?? $top?->category_id;
 
         $this->signal($searcherKey, 'text_search', $product, $product ? null : implode(' ', $words), Text::normalize($filters['q'] ?? ''),
-            $categoryId, $product?->brand ?? ($filters['brand'] ?? null), $results->total());
+            $categoryId, $product->brand ?? ($filters['brand'] ?? null), $results->total());
     }
 
     public function recordPhotoSearch(string $searcherKey, AiAnalysis $analysis): void
@@ -65,11 +65,11 @@ class DemandMonitor
         if (! $product && $label === '') {
             return;
         }
-        $categoryId = $product?->category_id ?? (! empty($x['category'])
+        $categoryId = $product->category_id ?? (! empty($x['category'])
             ? Category::query()->where('slug', Str::slug($x['category']))->orWhereRaw('lower(name) = ?', [mb_strtolower($x['category'])])->value('id')
             : null);
 
-        $this->signal($searcherKey, 'photo_search', $product, $label, $label, $categoryId, $product?->brand ?? ($x['brand'] ?? null), $analysis->candidates->count());
+        $this->signal($searcherKey, 'photo_search', $product, $label, $label, $categoryId, $product->brand ?? ($x['brand'] ?? null), $analysis->candidates->count());
     }
 
     private function signal(string $searcherKey, string $source, ?Product $product, ?string $words, string $label, ?int $categoryId, ?string $brand, int $resultCount): void
@@ -158,7 +158,7 @@ class DemandMonitor
      * category, else (no hint matched anyone) every active tenant.
      *
      * @param  Collection<int, int>  $listedBy
-     * @return Collection<int, object{email: string, user_name: string, tenant_id: int, tenant_name: string}>
+     * @return Collection<int, \stdClass> rows of email, user_name, tenant_id, tenant_name
      */
     private function memberRecipients(DemandAlert $alert, Collection $listedBy): Collection
     {
