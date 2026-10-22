@@ -17,7 +17,6 @@ use App\Models\Category;
 use App\Models\InventoryItem;
 use App\Models\InventoryLocation;
 use App\Models\Product;
-use App\Models\ProductBarcode;
 use App\Models\ProductVariant;
 use App\Models\PurchaseReceipt;
 use App\Models\StockLedgerEntry;
@@ -157,13 +156,7 @@ class InventoryController extends Controller
     {
         $ctx = $this->ctx();
         $ctx->can('inventory.create') || throw ApiException::forbidden();
-        $d = $request->validated();
-        foreach ($d['variants'] ?? [] as $v) {
-            foreach (array_keys($v['barcodes'] ?? []) as $code) {
-                ProductBarcode::query()->where('code', (string) $code)->exists() && throw ApiException::conflict('barcode_conflict', "Barcode $code already belongs to another catalog product.");
-            }
-        }
-        $product = $this->catalog->createProduct($d, $ctx->tenantId);
+        $product = $this->catalog->createProduct($request->validated(), $ctx->tenantId); // rejects barcodes already in the catalog
 
         return (new ProductResource($product->load('category')))->response()->setStatusCode(201);
     }

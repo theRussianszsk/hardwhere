@@ -16,6 +16,9 @@ use Illuminate\Support\Carbon;
  */
 class ProductBarcode extends DomainModel
 {
+    /** Mirrors the product_barcodes_type_chk CHECK constraint. */
+    public const TYPES = ['UPC', 'EAN8', 'EAN13', 'GTIN14', 'OTHER'];
+
     protected $table = 'product_barcodes';
 
     /** @return BelongsTo<ProductVariant, $this> */
