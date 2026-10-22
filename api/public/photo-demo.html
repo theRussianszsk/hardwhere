@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Recognition Demo</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --muted:#667085; --line:#e4e7ec; --brand:#c2410c; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --info:#1d4ed8; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151a; --card:#1b2028; --ink:#e8ecf2; --muted:#9aa4b2; --line:#2a313c; --brand:#fb923c; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:16px; display:grid; gap:14px; }
+  h1 { font-size:20px; margin:4px 0 0; } h2 { font-size:16px; margin:0 0 10px; } h3 { font-size:14px; margin:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  label { display:grid; gap:4px; font-size:13px; color:var(--muted); flex:1 1 160px; }
+  input, select, button { font:inherit; min-height:44px; border-radius:8px; border:1px solid var(--line); padding:8px 10px; background:var(--card); color:var(--ink); }
+  button { cursor:pointer; background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; padding:8px 16px; }
+  button.secondary { background:transparent; color:var(--ink); border-color:var(--line); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .tabs { display:flex; gap:8px; } .tabs button { flex:1; background:transparent; color:var(--ink); border-color:var(--line); }
+  .tabs button.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .banner { padding:10px 12px; border-radius:8px; font-size:13px; border:1px solid; }
+  .banner.demo { color:var(--warn); border-color:var(--warn); } .banner.err { color:var(--bad); border-color:var(--bad); } .banner.ok { color:var(--ok); border-color:var(--ok); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid currentColor; }
+  .exact_match, .likely_same_product { color:var(--ok); } .likely_variant, .possible_duplicate { color:var(--warn); } .new_product_candidate { color:var(--info); } .insufficient_confidence { color:var(--bad); }
+  .bar { height:8px; border-radius:99px; background:var(--line); overflow:hidden; } .bar > i { display:block; height:100%; background:var(--brand); }
+  .preview { max-width:100%; max-height:240px; border-radius:8px; border:1px solid var(--line); }
+  dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:8px 0 0; } dt { color:var(--muted); font-size:13px; } dd { margin:0; }
+  .cand { border:1px solid var(--line); border-radius:10px; padding:12px; display:grid; gap:8px; margin-top:10px; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; } .chip { font-size:12px; padding:2px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--line); }
+  .chip.good { color:var(--ok); } .chip.bad { color:var(--bad); } .chip.warn { color:var(--warn); }
+  .hidden { display:none !important; }
+  table { width:100%; border-collapse:collapse; font-size:13px; } td, th { text-align:left; padding:6px 4px; border-top:1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>Photo Recognition Demo</h1>
+    <div class="muted">Take or upload a hardware product photo. The server identifies it and matches it against the shared catalog.</div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button id="tab-vendor" class="on" role="tab">Vendor intake (Tenant A staff)</button>
+    <button id="tab-customer" role="tab">Customer photo search</button>
+  </div>
+
+  <section class="card" id="auth">
+    <h2>1. Sign in</h2>
+    <div class="row">
+      <label>Email <input id="email" type="email" autocomplete="username"></label>
+      <label>Password <input id="password" type="password" autocomplete="current-password"></label>
+      <button id="login">Sign in</button>
+    </div>
+    <div id="auth-msg" class="muted" style="margin-top:8px">Not signed in. Demo accounts are filled in from the seeder.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Photo</h2>
+    <div class="row">
+      <label>Image (jpg, png, webp)
+        <input id="file" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+      </label>
+      <label>Demo scenario (mock AI only)
+        <select id="hint"><option value="">Auto (from image hash)</option></select>
+      </label>
+      <button id="analyze" disabled>Analyze photo</button>
+    </div>
+    <p class="muted">With the demo AI the result does not depend on the pixels; pick a scenario to see a specific case. With a live Gemma provider the scenario is ignored.</p>
+    <img id="preview" class="preview hidden" alt="Selected photo preview">
+  </section>
+
+  <section id="result" class="card hidden" aria-live="polite"></section>
+  <section id="listings" class="card hidden"></section>
+</main>
+
+<script>
+const API = '/api/v1';
+const MODES = {
+  vendor:   { app: 'vendor',   email: 'staff.a@hardwhere.test', endpoint: '/vendor/ai/analyses' },
+  customer: { app: 'customer', email: 'ana.customer@hardwhere.test', endpoint: '/customer/search/photo' },
+};
+const SCENARIOS = ['makita-hp1630','makita-hp1630k','bosch-gsb13','barcode-visible','unbarcoded-tek-screw','ambiguous-cordless-drill','cordless-drill-12v','conflicting-barcode','unknown-product','blurry'];
+const $ = (id) => document.getElementById(id);
+const state = { mode: 'vendor', token: { vendor: null, customer: null }, stores: [] };
+
+const peso = (cents) => '₱' + (cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const label = (s) => String(s).replace(/^attr:/, '').replace(/_/g, ' ');
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+
+function errMessage(body, status) {
+  const e = body?.error ?? body;
+  const fields = e?.fields ? Object.values(e.fields).flat().join(' ') : '';
+  return [e?.message, fields].filter(Boolean).join(' ') || `Request failed (${status}).`;
+}
+
+async function api(path, opts = {}) {
+  const headers = { Accept: 'application/json', ...(opts.headers || {}) };
+  const token = state.token[state.mode];
+  if (token && !opts.anon) headers.Authorization = 'Bearer ' + token;
+  let res;
+  try { res = await fetch(API + path, { ...opts, headers }); }
+  catch { throw { message: 'Server unreachable. Is the API running on this host?', status: 0 }; }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw { message: errMessage(body, res.status), status: res.status, body };
+  return body;
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  $('tab-vendor').classList.toggle('on', mode === 'vendor');
+  $('tab-customer').classList.toggle('on', mode === 'customer');
+  $('email').value = MODES[mode].email;
+  $('password').value = 'password';
+  $('result').classList.add('hidden'); $('listings').classList.add('hidden');
+  renderAuth();
+}
+
+function renderAuth() {
+  const t = state.token[state.mode];
+  if (!t) $('auth-msg').textContent = 'Not signed in. Demo accounts are filled in from the seeder.';
+  $('analyze').disabled = !(t && $('file').files[0]);
+}
+
+$('tab-vendor').onclick = () => setMode('vendor');
+$('tab-customer').onclick = () => setMode('customer');
+
+$('login').onclick = async () => {
+  const btn = $('login'); btn.disabled = true;
+  try {
+    const body = await api('/auth/login', { method: 'POST', anon: true, headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('email').value, password: $('password').value, app: MODES[state.mode].app, device_name: 'photo-demo' }) });
+    state.token[state.mode] = body.token;
+    $('auth-msg').textContent = `Signed in as ${body.user.name}.`;
+    if (state.mode === 'vendor') state.stores = (await api('/vendor/stores')).data || [];
+  } catch (e) { $('auth-msg').textContent = e.message; }
+  btn.disabled = false; renderAuth();
+};
+
+$('file').onchange = () => {
+  const f = $('file').files[0];
+  const img = $('preview');
+  if (f) { img.src = URL.createObjectURL(f); img.classList.remove('hidden'); } else img.classList.add('hidden');
+  renderAuth();
+};
+
+$('analyze').onclick = async () => {
+  const f = $('file').files[0]; if (!f) return;
+  const out = $('result'); out.classList.remove('hidden');
+  $('listings').classList.add('hidden');
+  out.innerHTML = '<div class="muted">Analyzing photo… this can take a few seconds.</div>';
+  $('analyze').disabled = true;
+  const form = new FormData(); form.append('image', f);
+  if ($('hint').value) form.append('hint', $('hint').value);
+  try {
+    const body = await api(MODES[state.mode].endpoint, { method: 'POST', body: form, headers: { 'Idempotency-Key': 'ui-' + uuid() } });
+    renderResult(body.data);
+  } catch (e) {
+    const a = e.body?.error?.details?.analysis ?? e.body?.details?.analysis;
+    out.innerHTML = `<div class="banner err">${esc(e.message)}</div>`;
+    if (a) renderResult(a, e.message);
+    if (e.status === 401) { state.token[state.mode] = null; renderAuth(); }
+  }
+  renderAuth();
+};
+
+function renderResult(a, notice) {
+  const x = a.extracted || {};
+  const conf = Math.round((a.overall_confidence ?? 0) * 100);
+  const attrs = Object.entries(x.attributes || {}).map(([k, v]) => `<dt>${esc(label(k))}</dt><dd>${esc(v)}</dd>`).join('');
+  const rows = [['Name', x.name], ['Brand', x.brand], ['Model', x.model], ['Category', x.category], ['Barcode text', x.barcode_text], ['Pack quantity', x.pack_quantity]]
+    .filter(([, v]) => v != null && v !== '').map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  $('result').innerHTML = `
+    ${notice ? `<div class="banner err">${esc(notice)}</div>` : ''}
+    <div class="banner ${a.is_mock ? 'demo' : 'ok'}">${esc(a.provider_label)}</div>
+    <h2 style="margin-top:12px">3. Result <span class="badge ${esc(a.classification)}">${esc(label(a.classification))}</span></h2>
+    <div class="muted">Overall confidence ${conf}%${a.requires_confirmation ? ' · human confirmation required' : ''}</div>
+    <div class="bar" role="progressbar" aria-valuenow="${conf}" aria-valuemin="0" aria-valuemax="100"><i style="width:${conf}%"></i></div>
+    ${(a.warnings || []).length ? `<div class="chips" style="margin-top:10px">${a.warnings.map((w) => `<span class="chip warn">${esc(typeof w === 'string' ? w : (w.message || w.code))}</span>`).join('')}</div>` : ''}
+    <h3 style="margin-top:14px">What the AI read from the photo</h3>
+    <dl>${rows}${attrs}</dl>
+    <h3 style="margin-top:14px">Catalog matches (${(a.candidates || []).length})</h3>
+    ${(a.candidates || []).map((c, i) => candidateHtml(a, c, i)).join('') || '<div class="muted">No catalog product is similar enough. In vendor intake you can create a new catalog candidate.</div>'}
+  `;
+  document.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => pick(a, +b.dataset.pick)));
+  document.querySelectorAll('[data-stores]').forEach((b) => (b.onclick = () => showListings(+b.dataset.stores, b.dataset.name)));
+}
+
+function candidateHtml(a, c, i) {
+  const p = c.product, v = c.variant;
+  const actions = state.mode === 'vendor'
+    ? (v ? `<button data-pick="${i}">Use this product</button>` : '<div class="muted">No variant to select.</div>')
+    : `<button data-stores="${p.id}" data-name="${esc(p.name)}">See stores &amp; prices</button>`;
+  return `<div class="cand">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div><strong>${esc(p.name)}</strong><div class="muted">${esc([p.brand, p.model_number].filter(Boolean).join(' · '))}</div></div>
+      <span class="badge ${esc(c.classification)}">${esc(label(c.classification))} · ${Math.round((c.score ?? 0) * 100)}%</span>
+    </div>
+    ${v ? `<div class="muted">Variant: ${esc(v.name)}${v.pack_quantity ? ' · pack of ' + esc(v.pack_quantity) : ''}${(v.barcodes || []).length ? ' · ' + esc(v.barcodes.map((b) => b.code).join(', ')) : ''}</div>` : ''}
+    <div class="chips">
+      ${(c.matched_fields || []).map((f) => `<span class="chip good">✓ ${esc(label(f))}</span>`).join('')}
+      ${(c.mismatched_fields || []).map((f) => `<span class="chip bad">✗ ${esc(label(f))}</span>`).join('')}
+      ${(c.warnings || []).map((w) => `<span class="chip warn">${esc(typeof w === 'string' ? w : (w.message || w.code))}</span>`).join('')}
+    </div>
+    ${actions}
+  </div>`;
+}
+
+function pick(a, i) {
+  const c = a.candidates[i];
+  const v = c.variant;
+  const stores = state.stores.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  const box = document.createElement('div');
+  box.className = 'cand'; box.id = 'confirm';
+  box.innerHTML = `
+    <h3>4. Confirm &amp; add to your inventory: ${esc(c.product.name)}${v ? ' — ' + esc(v.name) : ''}</h3>
+    <div class="muted">Nothing is saved until you press Confirm. The AI suggestion and your input are both recorded.</div>
+    <div class="row">
+      <label>Your SKU <input id="f-sku" value="DEMO-${Date.now().toString().slice(-6)}"></label>
+      <label>Store <select id="f-store">${stores}</select></label>
+      <label>Cost (₱) <input id="f-cost" type="number" min="0" step="0.01" value="100"></label>
+      <label>Selling price (₱) <input id="f-price" type="number" min="0.01" step="0.01" value="150"></label>
+      <label>Opening quantity <input id="f-qty" type="number" min="0" step="1" value="5"></label>
+    </div>
+    <div class="row"><button id="f-ok">Confirm</button><button id="f-no" class="secondary">Reject suggestion</button></div>
+    <div id="f-msg"></div>`;
+  document.getElementById('confirm')?.remove();
+  $('result').appendChild(box);
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const send = async (payload) => {
+    $('f-ok').disabled = $('f-no').disabled = true;
+    try {
+      const r = await api(`/vendor/ai/analyses/${a.id}/confirm`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'ui-' + uuid() }, body: JSON.stringify(payload) });
+      $('f-msg').innerHTML = `<div class="banner ok">Recorded: ${esc(label(r.data.decision))}${r.data.inventory_item_id ? ` · inventory item #${r.data.inventory_item_id} created with an opening stock ledger entry` : ''}.</div>`;
+    } catch (e) { $('f-msg').innerHTML = `<div class="banner err">${esc(e.message)}</div>`; $('f-ok').disabled = $('f-no').disabled = false; }
+  };
+  $('f-ok').onclick = () => send({
+    decision: v && c.classification !== 'exact_match' && c.classification !== 'likely_same_product' ? 'selected_variant' : 'confirmed_existing',
+    variant_id: v.id,
+    inventory: { tenant_sku: $('f-sku').value, store_id: +$('f-store').value, cost_cents: Math.round($('f-cost').value * 100), price_cents: Math.round($('f-price').value * 100), quantity: +$('f-qty').value },
+  });
+  $('f-no').onclick = () => send({ decision: 'rejected' });
+}
+
+async function showListings(productId, name) {
+  const box = $('listings'); box.classList.remove('hidden');
+  box.innerHTML = '<div class="muted">Loading stores…</div>';
+  try {
+    const r = await api(`/public/products/${productId}/listings`, { anon: true });
+    const rows = r.data.map((l) => `<tr><td>${esc(l.store.business_name)} — ${esc(l.store.name)}<div class="muted">${esc([l.store.address_line, l.store.city].filter(Boolean).join(', '))}${l.store.phone ? ' · ' + esc(l.store.phone) : ''}</div><div class="muted">${esc(l.title)}</div></td>
+      <td>${peso(l.sale_price_cents ?? l.price_cents)}</td><td>${esc(label(l.availability.status))}</td></tr>`).join('');
+    box.innerHTML = `<h2>Stores carrying ${esc(name)}</h2><div class="muted">As of ${esc(new Date(r.meta.server_time).toLocaleString('en-PH', { timeZone: 'Asia/Manila' }))} (Philippine time)</div>
+      ${rows ? `<table><tr><th>Store</th><th>Price</th><th>Availability</th></tr>${rows}</table>` : '<div class="muted">No store lists this product right now.</div>'}`;
+  } catch (e) { box.innerHTML = `<div class="banner err">${esc(e.message)}</div>`; }
+}
+
+SCENARIOS.forEach((s) => { const o = document.createElement('option'); o.value = s; o.textContent = s; $('hint').appendChild(o); });
+setMode('vendor');
+</script>
+</body>
+</html>
