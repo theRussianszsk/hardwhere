@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Api;
 
-
 class SessionRequest extends ApiRequest
 {
     /** @return array<string, mixed> */

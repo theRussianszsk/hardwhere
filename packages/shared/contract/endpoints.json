@@ -1,0 +1,461 @@
+{
+ "version": "v1",
+ "basePath": "/api/v1",
+ "endpoints": [
+  {
+   "name": "login",
+   "method": "POST",
+   "path": "auth/login",
+   "auth": "none",
+   "app": "both"
+  },
+  {
+   "name": "register",
+   "method": "POST",
+   "path": "auth/register",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "me",
+   "method": "GET",
+   "path": "auth/me",
+   "auth": "any",
+   "app": "both"
+  },
+  {
+   "name": "renew",
+   "method": "POST",
+   "path": "auth/renew",
+   "auth": "any",
+   "app": "both"
+  },
+  {
+   "name": "logout",
+   "method": "POST",
+   "path": "auth/logout",
+   "auth": "any",
+   "app": "both"
+  },
+  {
+   "name": "publicCategories",
+   "method": "GET",
+   "path": "public/categories",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicSearch",
+   "method": "GET",
+   "path": "public/search",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicProduct",
+   "method": "GET",
+   "path": "public/products/{product}",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicProductListings",
+   "method": "GET",
+   "path": "public/products/{product}/listings",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicListing",
+   "method": "GET",
+   "path": "public/listings/{listing}",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicStore",
+   "method": "GET",
+   "path": "public/stores/{store}",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicStoreListings",
+   "method": "GET",
+   "path": "public/stores/{store}/listings",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicSyncSnapshot",
+   "method": "GET",
+   "path": "public/sync/snapshot",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "publicSyncChanges",
+   "method": "GET",
+   "path": "public/sync/changes",
+   "auth": "none",
+   "app": "customer"
+  },
+  {
+   "name": "customerPhotoSearch",
+   "method": "POST",
+   "path": "customer/search/photo",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "cartGet",
+   "method": "GET",
+   "path": "customer/cart",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "cartReplace",
+   "method": "PUT",
+   "path": "customer/cart",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "cartClear",
+   "method": "DELETE",
+   "path": "customer/cart",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "ordersList",
+   "method": "GET",
+   "path": "customer/orders",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "ordersPlace",
+   "method": "POST",
+   "path": "customer/orders",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "orderGet",
+   "method": "GET",
+   "path": "customer/orders/{order}",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "orderCancel",
+   "method": "POST",
+   "path": "customer/orders/{order}/cancel",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "customerSyncSnapshot",
+   "method": "GET",
+   "path": "customer/sync/snapshot",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "customerSyncChanges",
+   "method": "GET",
+   "path": "customer/sync/changes",
+   "auth": "customer",
+   "app": "customer"
+  },
+  {
+   "name": "dashboard",
+   "method": "GET",
+   "path": "vendor/dashboard",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "stores",
+   "method": "GET",
+   "path": "vendor/stores",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "locations",
+   "method": "GET",
+   "path": "vendor/locations",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "createStore",
+   "method": "POST",
+   "path": "vendor/stores",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "updateStore",
+   "method": "PUT",
+   "path": "vendor/stores/{store}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "staffList",
+   "method": "GET",
+   "path": "vendor/staff",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "staffAdd",
+   "method": "POST",
+   "path": "vendor/staff",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "staffUpdate",
+   "method": "PUT",
+   "path": "vendor/staff/{membership}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "staffRemove",
+   "method": "DELETE",
+   "path": "vendor/staff/{membership}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "suppliers",
+   "method": "GET",
+   "path": "vendor/suppliers",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "supplierCreate",
+   "method": "POST",
+   "path": "vendor/suppliers",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "inventoryList",
+   "method": "GET",
+   "path": "vendor/inventory",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "inventoryCreate",
+   "method": "POST",
+   "path": "vendor/inventory",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "inventoryGet",
+   "method": "GET",
+   "path": "vendor/inventory/{item}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "inventoryLedger",
+   "method": "GET",
+   "path": "vendor/inventory/{item}/ledger",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "stockAdjust",
+   "method": "POST",
+   "path": "vendor/inventory/{item}/adjustments",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "purchaseReceive",
+   "method": "POST",
+   "path": "vendor/purchase-receipts",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "catalogCategories",
+   "method": "GET",
+   "path": "vendor/catalog/categories",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "catalogSearch",
+   "method": "GET",
+   "path": "vendor/catalog/search",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "catalogProduct",
+   "method": "GET",
+   "path": "vendor/catalog/products/{product}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "catalogCandidate",
+   "method": "POST",
+   "path": "vendor/catalog/candidates",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "listingsList",
+   "method": "GET",
+   "path": "vendor/listings",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "listingUpdate",
+   "method": "PATCH",
+   "path": "vendor/listings/{listing}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "aiAnalyze",
+   "method": "POST",
+   "path": "vendor/ai/analyses",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "aiGet",
+   "method": "GET",
+   "path": "vendor/ai/analyses/{analysis}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "aiConfirm",
+   "method": "POST",
+   "path": "vendor/ai/analyses/{analysis}/confirm",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posSearch",
+   "method": "GET",
+   "path": "vendor/pos/search",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posPhotoSearch",
+   "method": "POST",
+   "path": "vendor/pos/photo-search",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posCheckout",
+   "method": "POST",
+   "path": "vendor/pos/checkout",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posRegisters",
+   "method": "GET",
+   "path": "vendor/pos/registers",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posSessionCurrent",
+   "method": "GET",
+   "path": "vendor/pos/sessions/current",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posSessionOpen",
+   "method": "POST",
+   "path": "vendor/pos/sessions",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "posSessionClose",
+   "method": "POST",
+   "path": "vendor/pos/sessions/{session}/close",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "salesList",
+   "method": "GET",
+   "path": "vendor/sales",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "saleGet",
+   "method": "GET",
+   "path": "vendor/sales/{sale}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "saleVoid",
+   "method": "POST",
+   "path": "vendor/sales/{sale}/void",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "vendorOrders",
+   "method": "GET",
+   "path": "vendor/orders",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "vendorOrderGet",
+   "method": "GET",
+   "path": "vendor/orders/{order}",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "vendorOrderTransition",
+   "method": "POST",
+   "path": "vendor/orders/{order}/transition",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "vendorSyncSnapshot",
+   "method": "GET",
+   "path": "vendor/sync/snapshot",
+   "auth": "vendor",
+   "app": "vendor"
+  },
+  {
+   "name": "vendorSyncChanges",
+   "method": "GET",
+   "path": "vendor/sync/changes",
+   "auth": "vendor",
+   "app": "vendor"
+  }
+ ]
+}

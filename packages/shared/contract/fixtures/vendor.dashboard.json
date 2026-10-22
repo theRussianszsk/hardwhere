@@ -1,0 +1,10 @@
+{
+    "data": {
+        "sales_today_count": 2,
+        "sales_today_cents": 150300,
+        "low_stock_count": 2,
+        "open_orders": 1,
+        "published_listings": 22,
+        "inventory_items": 20
+    }
+}

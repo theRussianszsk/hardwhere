@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /*
@@ -17,6 +19,8 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+pest()->extend(TestCase::class)->in('Concurrency'); // committed data + real parallel processes: no wrapping transaction
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +47,14 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/** Empties every table (not wrapped in a rolled-back transaction) after tests that need committed data. */
+function truncateAllTables(): void
+{
+    $tables = collect(Schema::getTableListing())->map(fn ($t) => preg_replace('/^public\./', '', $t))->reject(fn ($t) => $t === 'migrations')
+        ->map(fn ($t) => '"'.$t.'"')->implode(',');
+    DB::statement("TRUNCATE TABLE $tables RESTART IDENTITY CASCADE");
+}
 
 /** Idempotency-Key header for mutating API calls. */
 function idem(string $seed = ''): array

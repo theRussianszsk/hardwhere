@@ -1,0 +1,159 @@
+{
+    "changes": [
+        {
+            "entity": "product",
+            "id": 1,
+            "op": "upsert",
+            "data": {
+                "id": 1,
+                "category": {
+                    "id": 1,
+                    "slug": "power-tools",
+                    "name": "Power Tools"
+                },
+                "category_id": 1,
+                "brand": "Makita",
+                "manufacturer": "Makita",
+                "name": "Hammer Drill 16mm",
+                "model_number": "HP1630",
+                "product_type": null,
+                "description": "Hammer Drill 16mm — demo catalog entry.",
+                "attributes": {
+                    "chuck_mm": 13,
+                    "wattage_w": 710
+                },
+                "compatibility": [],
+                "included_components": [],
+                "safety_info": "Wear eye and ear protection. Disconnect from power before changing accessories.",
+                "warranty": "1 year manufacturer warranty",
+                "ph_specs": {
+                    "plug": "Type A/B",
+                    "voltage": "220V 60Hz"
+                },
+                "synonyms": [
+                    "rotary hammer",
+                    "impact drill"
+                ],
+                "status": "approved",
+                "images": [
+                    {
+                        "url": "/demo-images/power-tools.svg",
+                        "alt": "Hammer Drill 16mm (demo image)",
+                        "is_primary": true
+                    }
+                ],
+                "variants": [
+                    {
+                        "id": 1,
+                        "product_id": 1,
+                        "name": "Makita HP1630 Hammer Drill 16mm, 710W 220V",
+                        "model_number": "HP1630",
+                        "part_number": null,
+                        "attributes": {
+                            "voltage_v": 220,
+                            "wattage_w": 710
+                        },
+                        "uom": "pc",
+                        "pack_quantity": 1,
+                        "is_default": true,
+                        "status": "approved",
+                        "barcodes": []
+                    },
+                    {
+                        "id": 1,
+                        "product_id": 1,
+                        "name": "Makita HP1630K Hammer Drill 16mm with carrying case",
+                        "model_number": "HP1630K",
+                        "part_number": null,
+                        "attributes": {
+                            "kit": "with case",
+                            "voltage_v": 220,
+                            "wattage_w": 710
+                        },
+                        "uom": "set",
+                        "pack_quantity": 1,
+                        "is_default": false,
+                        "status": "approved",
+                        "barcodes": [
+                            {
+                                "code": "4888381001634",
+                                "type": "EAN13"
+                            }
+                        ]
+                    }
+                ],
+                "row_version": 1,
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            }
+        },
+        {
+            "entity": "product",
+            "id": 1,
+            "op": "upsert",
+            "data": {
+                "id": 1,
+                "category": {
+                    "id": 1,
+                    "slug": "power-tools",
+                    "name": "Power Tools"
+                },
+                "category_id": 1,
+                "brand": "Bosch",
+                "manufacturer": "Bosch",
+                "name": "Impact Drill GSB 13 RE",
+                "model_number": "GSB 13 RE",
+                "product_type": null,
+                "description": "Impact Drill GSB 13 RE — demo catalog entry.",
+                "attributes": {},
+                "compatibility": [],
+                "included_components": [],
+                "safety_info": "Wear eye and ear protection. Disconnect from power before changing accessories.",
+                "warranty": "1 year manufacturer warranty",
+                "ph_specs": {
+                    "plug": "Type A/B",
+                    "voltage": "220V 60Hz"
+                },
+                "synonyms": [
+                    "hammer drill",
+                    "bosch drill"
+                ],
+                "status": "approved",
+                "images": [
+                    {
+                        "url": "/demo-images/power-tools.svg",
+                        "alt": "Impact Drill GSB 13 RE (demo image)",
+                        "is_primary": true
+                    }
+                ],
+                "variants": [
+                    {
+                        "id": 1,
+                        "product_id": 1,
+                        "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+                        "model_number": "GSB 13 RE",
+                        "part_number": null,
+                        "attributes": {
+                            "voltage_v": 220,
+                            "wattage_w": 600
+                        },
+                        "uom": "pc",
+                        "pack_quantity": 1,
+                        "is_default": true,
+                        "status": "approved",
+                        "barcodes": [
+                            {
+                                "code": "3161921000139",
+                                "type": "EAN13"
+                            }
+                        ]
+                    }
+                ],
+                "row_version": 1,
+                "updated_at": "2026-01-01T00:00:00+00:00"
+            }
+        }
+    ],
+    "cursor": "0.0",
+    "has_more": true,
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

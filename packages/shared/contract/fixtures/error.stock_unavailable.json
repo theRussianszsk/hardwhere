@@ -1,0 +1,11 @@
+{
+    "error": {
+        "code": "stock_unavailable",
+        "message": "Not enough stock is available.",
+        "details": {
+            "inventory_item_id": 1,
+            "requested": 500,
+            "available": 15
+        }
+    }
+}

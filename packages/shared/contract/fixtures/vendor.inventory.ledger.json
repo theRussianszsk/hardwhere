@@ -1,0 +1,51 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "inventory_item_id": 1,
+            "location_id": 1,
+            "movement_type": "opening_balance",
+            "quantity_delta": 9,
+            "before_quantity": 0,
+            "after_quantity": 9,
+            "reserved_delta": 0,
+            "before_reserved": 0,
+            "after_reserved": 0,
+            "reference_type": "inventory_item",
+            "reference_id": 1,
+            "actor_type": "user",
+            "actor_id": 1,
+            "note": "Opening balance",
+            "occurred_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/inventory/24/ledger?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/inventory/24/ledger?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/inventory/24/ledger?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/inventory/24/ledger",
+        "per_page": 30,
+        "to": 1,
+        "total": 1
+    }
+}

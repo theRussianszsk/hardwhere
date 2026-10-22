@@ -36,12 +36,17 @@ class AiIntakeService
     public function analyze(User $user, ?TenantContext $ctx, UploadedFile $file, string $purpose, string $idempotencyKey, ?string $hint = null, ?Builder $restrictTo = null): AiAnalysis
     {
         $clean = $this->images->sanitize($file);
-        $scope = $ctx ? "t{$ctx->tenantId}" : "u{$user->id}";
+        $scope = $ctx ? "t{$ctx->tenantId}:u{$user->id}" : "u{$user->id}";
+
+        $existing = DB::table('idempotency_keys')->where('scope', $scope)->where('key', $idempotencyKey)->where('operation', "ai.$purpose")->whereNotNull('resource_id')->first();
+        if ($existing && $existing->request_hash === hash('sha256', $clean['sha256'].($hint ?? ''))) {
+            return AiAnalysis::query()->findOrFail($existing->resource_id)->load('candidates.product', 'candidates.variant.barcodes'); // a retried upload must not pay for a second provider call
+        }
 
         // The slow provider call happens outside the DB transaction; the idempotent persist below makes retries replay one analysis.
         $started = microtime(true);
         try {
-            $result = $this->vision->analyze($clean['bytes'], $clean['mime'], ['hint' => $hint]);
+            $result = $this->vision->analyze($this->images->forModel($clean['bytes']), $clean['mime'], ['hint' => $hint, 'filename' => $file->getClientOriginalName()]);
         } catch (AiProviderException $e) {
             throw new ApiException('ai_unavailable', 'Photo analysis is unavailable right now. You can enter the product manually.', 503, ['reason' => $e->getMessage()]);
         }
@@ -79,7 +84,7 @@ class AiIntakeService
     {
         $ctx->can('ai.analyze') || throw ApiException::forbidden();
 
-        [$decision] = $this->idempotency->run("t{$ctx->tenantId}", $idempotencyKey, 'ai.confirm', Idempotency::hash($d + ['analysis' => $analysisId]), AiDecision::class, function () use ($ctx, $analysisId, $d) {
+        [$decision] = $this->idempotency->run("t{$ctx->tenantId}:u{$ctx->userId}", $idempotencyKey, 'ai.confirm', Idempotency::hash($d + ['analysis' => $analysisId]), AiDecision::class, function () use ($ctx, $analysisId, $d) {
             $analysis = AiAnalysis::query()->where('tenant_id', $ctx->tenantId)->where('purpose', 'intake')->lockForUpdate()->find($analysisId) ?? throw ApiException::notFound('Analysis');
             if ($analysis->decision()->exists()) {
                 throw ApiException::conflict('already_decided', 'This photo was already reviewed.');

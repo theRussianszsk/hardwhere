@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Laravel\Fortify\Features;
 
@@ -21,7 +22,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected bool $actingAsUsed = false;
 
-    public function actingAs(\Illuminate\Contracts\Auth\Authenticatable $user, $guard = null)
+    public function actingAs(Authenticatable $user, $guard = null)
     {
         $this->actingAsUsed = true;
 

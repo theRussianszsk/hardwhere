@@ -1,0 +1,142 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-DRL-001",
+            "title": "Bosch GSB 13 RE Impact Drill 600W 220V",
+            "title_override": null,
+            "description": null,
+            "price_cents": 395000,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 8,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Bosch GSB 13 RE Impact Drill 600W 220V",
+                "model_number": "GSB 13 RE",
+                "part_number": null,
+                "attributes": {
+                    "voltage_v": 220,
+                    "wattage_w": 600
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "3161921000139",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Impact Drill GSB 13 RE",
+                "brand": "Bosch",
+                "category": "Power Tools"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        },
+        {
+            "id": 1,
+            "store_id": 1,
+            "inventory_item_id": 1,
+            "product_id": 1,
+            "variant_id": 1,
+            "sku": "DCH-HMR-016",
+            "title": "Stanley 51-188 Claw Hammer 16oz",
+            "title_override": null,
+            "description": null,
+            "price_cents": 34900,
+            "sale_price_cents": null,
+            "currency": "PHP",
+            "uom": "pc",
+            "visibility": "public",
+            "publication_status": "published",
+            "pickup_available": true,
+            "delivery_available": true,
+            "min_order_qty": 1,
+            "max_order_qty": null,
+            "lead_time_hours": 0,
+            "stock_buffer": 0,
+            "show_exact_stock": false,
+            "available_quantity": 40,
+            "variant": {
+                "id": 1,
+                "product_id": 1,
+                "name": "Stanley 51-188 Claw Hammer 16oz",
+                "model_number": "51-188",
+                "part_number": null,
+                "attributes": {
+                    "weight_oz": 16
+                },
+                "uom": "pc",
+                "pack_quantity": 1,
+                "is_default": true,
+                "status": "approved",
+                "barcodes": [
+                    {
+                        "code": "4800000100017",
+                        "type": "EAN13"
+                    }
+                ]
+            },
+            "product": {
+                "id": 1,
+                "name": "Claw Hammer 51-188",
+                "brand": "Stanley",
+                "category": "Hand Tools"
+            },
+            "row_version": 2,
+            "updated_at": "2026-01-01T00:00:00+00:00",
+            "deleted_at": null
+        }
+    ],
+    "links": {
+        "first": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+        "last": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+        "prev": null,
+        "next": null
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 1,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "page": null,
+                "active": false
+            },
+            {
+                "url": "http://localhost:8000/api/v1/vendor/pos/search?page=1",
+                "label": "1",
+                "page": 1,
+                "active": true
+            }
+        ],
+        "path": "http://localhost:8000/api/v1/vendor/pos/search",
+        "per_page": 30,
+        "to": 2,
+        "total": 2
+    }
+}

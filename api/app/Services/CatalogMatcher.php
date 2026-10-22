@@ -31,8 +31,6 @@ class CatalogMatcher
 
     public const NOT_HARDWARE = 'not_hardware';
 
-    private const RANK = [self::EXACT => 5, self::SAME => 4, self::VARIANT => 3, self::DUPLICATE => 2];
-
     /** @var array<string, string>|null attribute key => human label, for keys that make products commercially different */
     private ?array $axes = null;
 
@@ -63,8 +61,16 @@ class CatalogMatcher
             $c = $this->score($x, $variant, (float) ($row->sim ?? 0), $x->name ? (float) ($row->cover ?? 0) : 0.0, $modelKey, $barcodeVariant === $variant->id);
             $c && $candidates[] = $c;
         }
-        usort($candidates, fn ($a, $b) => [self::RANK[$b['classification']], $b['score']] <=> [self::RANK[$a['classification']], $a['score']]);
+        // Contradictory evidence (the printed barcode belongs to another brand/model) means nothing may be called an exact match.
+        $barcodeConflict = collect($candidates)->contains(fn ($c) => collect($c['warnings'])->contains(fn ($w) => str_starts_with($w, 'Conflicting barcode')));
+        if ($barcodeConflict) {
+            $candidates = array_map(fn ($c) => $c['classification'] === self::EXACT ? [...$c, 'classification' => self::SAME] : $c, $candidates);
+        }
+        // Exact matches first, then by score; a sibling that differs on a commercial axis ranks below an equally-scored real match.
+        $order = fn ($c) => [$c['classification'] === self::EXACT ? 1 : 0, $c['score'] - ($c['classification'] === self::VARIANT ? 0.15 : 0)];
+        usort($candidates, fn ($a, $b) => $order($b) <=> $order($a));
         $candidates = array_slice($candidates, 0, $limit);
+        $conflictWarnings = collect($candidates)->pluck('warnings')->flatten()->filter(fn ($w) => str_starts_with($w, 'Conflicting barcode'))->all();
 
         if ($x->conf('brand') > 0 && $x->conf('brand') < 0.6 && $x->brand) {
             $warnings[] = 'Low-confidence brand';
@@ -87,8 +93,9 @@ class CatalogMatcher
             $top !== null => $top['classification'],
             default => self::NEW,
         };
-        $barcodeExact = $top && $top['classification'] === self::EXACT && $barcodeVariant === $top['variant_id'];
-        $warnings = array_values(array_unique(array_merge($warnings, $top['warnings'] ?? [])));
+        $barcodeExact = ! $barcodeConflict && $top && $top['classification'] === self::EXACT && $barcodeVariant === $top['variant_id'];
+        $warnings = array_unique(array_merge($warnings, $top['warnings'] ?? [], $conflictWarnings));
+        $warnings = array_values($warnings);
 
         return [
             'classification' => $classification,
@@ -220,26 +227,28 @@ class CatalogMatcher
 
         // Without a brand or model agreeing, only a strong name match in the same category counts; weak text overlap is not a match.
         $identified = $model >= 0.6 || $brand === 1.0;
-        if (! $identified) {
-            if ($category === 0.25) {
-                return null;
-            }
-            // Same kind of product (an unbranded "claw hammer" vs a catalog claw hammer): offer it, but never as the same item.
-            if (($text ?? 0) < 0.7) {
-                return $category === 1.0 && $cover >= 0.8
-                    ? $this->candidate($v, self::DUPLICATE, min(max($score, 0.5), 0.69), $matched, $mismatched, [...$warn, 'Same product type; brand and model not confirmed'])
-                    : null;
-            }
+        // Same kind of product (an unbranded "claw hammer" vs a catalog claw hammer): kept, but never as the same item.
+        $sameTypeOnly = ! $identified && ($text ?? 0) < 0.7;
+        if (! $identified && ($category === 0.25 || ($sameTypeOnly && ! ($category === 1.0 && $cover >= 0.8)))) {
+            return null;
+        }
+        if ($sameTypeOnly) {
+            $score = min(max($score, 0.5), 0.69);
+            $warn[] = 'Same product type; brand and model not confirmed';
         }
 
         if ($axisConflicts) {
+            // The mismatch is already expressed by the "variant" class and its warnings; do not also bury the sibling via the attribute signal.
+            $rest = array_diff_key($signals, ['attr' => 1]);
+            $w = array_sum(array_map(fn ($s) => $s[1] === null ? 0 : $s[0], $rest));
+            $score = $w > 0 ? array_sum(array_map(fn ($s) => $s[1] === null ? 0 : $s[0] * $s[1], $rest)) / $w : $score;
             $score = min($score, 0.79);
             $warn[] = 'Possible product variant';
 
             return $score >= 0.45 ? $this->candidate($v, self::VARIANT, $score, $matched, $mismatched, array_values(array_unique($warn))) : null;
         }
         if ($model === 0.6) {
-            return $this->candidate($v, self::VARIANT, min($score, 0.79), $matched, $mismatched, $warn + [1 => 'Possible product variant']);
+            return $this->candidate($v, self::VARIANT, min($score, 0.79), $matched, $mismatched, [...$warn, 'Possible product variant']);
         }
         if ($model === 1.0 && $brand !== 0.0 && $x->conf('model') >= 0.75) {
             return $this->candidate($v, self::EXACT, max($score, 0.9), $matched, $mismatched, $warn);

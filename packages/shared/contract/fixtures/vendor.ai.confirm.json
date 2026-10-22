@@ -1,0 +1,10 @@
+{
+    "data": {
+        "id": 1,
+        "decision": "rejected",
+        "variant_id": null,
+        "inventory_item_id": null,
+        "ai_suggestion_preserved": true,
+        "tenant_input_preserved": true
+    }
+}

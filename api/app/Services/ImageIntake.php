@@ -27,7 +27,7 @@ class ImageIntake
             throw ApiException::invalid('image_too_large', 'The photo is too large. Maximum is '.(config('hardwhere.ai.max_image_kb') / 1024).' MB.');
         }
         [$w, $h] = $info;
-        if ($w < 64 || $h < 64 || $w * $h > 50_000_000) {
+        if ($w < 64 || $h < 64 || $w * $h > 16_000_000) {
             throw ApiException::invalid('invalid_image_size', 'The photo dimensions are not supported.');
         }
 
@@ -42,6 +42,22 @@ class ImageIntake
         $bytes = (string) ob_get_clean();
 
         return ['bytes' => $bytes, 'mime' => 'image/jpeg', 'sha256' => hash('sha256', $bytes)];
+    }
+
+    /** A smaller JPEG for the vision model: fewer pixels means a faster, cheaper call. Never used for storage. */
+    public function forModel(string $jpegBytes): string
+    {
+        $edge = (int) config('hardwhere.ai.model_image_edge');
+        $img = @imagecreatefromstring($jpegBytes);
+        if (! $img || $edge <= 0 || max(imagesx($img), imagesy($img)) <= $edge) {
+            return $jpegBytes;
+        }
+        [$w, $h] = [imagesx($img), imagesy($img)];
+        $small = imagescale($img, $w >= $h ? $edge : (int) round($w * $edge / $h), $w >= $h ? (int) round($h * $edge / $w) : $edge);
+        ob_start();
+        imagejpeg($small, null, 82);
+
+        return (string) ob_get_clean();
     }
 
     /** Store on the private disk; returns the relative path. */

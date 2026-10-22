@@ -1,0 +1,28 @@
+{
+    "entity": "category",
+    "items": [
+        {
+            "id": 1,
+            "parent_id": null,
+            "slug": "power-tools",
+            "name": "Power Tools",
+            "sort": 0,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        {
+            "id": 1,
+            "parent_id": null,
+            "slug": "hand-tools",
+            "name": "Hand Tools",
+            "sort": 1,
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        }
+    ],
+    "next_after": 1,
+    "cursor": "0.0",
+    "entities": [
+        "category",
+        "product"
+    ],
+    "server_time": "2026-01-01T00:00:00+00:00"
+}

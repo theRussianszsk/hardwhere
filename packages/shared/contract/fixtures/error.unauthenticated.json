@@ -1,0 +1,6 @@
+{
+    "error": {
+        "code": "unauthenticated",
+        "message": "Your session has expired. Please sign in again."
+    }
+}

@@ -47,7 +47,7 @@ class Idempotency
                 ->update(['resource_type' => $resourceClass, 'resource_id' => $resource->getKey()]);
 
             return [$resource, false];
-        });
+        }, 3); // PostgreSQL may pick this transaction as a deadlock victim; the whole unit is safely re-runnable
     }
 
     /** @param  array<string, mixed>  $payload */

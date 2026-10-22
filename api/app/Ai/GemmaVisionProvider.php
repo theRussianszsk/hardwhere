@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Http;
  */
 class GemmaVisionProvider implements VisionProvider
 {
+    use DecodesModelJson;
+
     public const PROMPT = <<<'TXT'
 You identify hardware-store products (Philippines) from one photo. Reply with ONE JSON object and nothing else, using exactly these keys:
 {"name": string|null, "brand": string|null, "model": string|null, "part_number": string|null, "category": string|null,
@@ -21,6 +23,7 @@ You identify hardware-store products (Philippines) from one photo. Reply with ON
  "pack_quantity": integer|null, "barcode_text": string|null (digits only, only if clearly legible),
  "confidence": {"name": 0-1, "brand": 0-1, "model": 0-1, "category": 0-1, "attributes": 0-1, "barcode": 0-1},
  "overall_confidence": 0-1, "image_sufficient": boolean, "is_hardware": boolean, "notes": [string]}
+"model" is the product's printed model/type NUMBER (e.g. HP1630, GSB 13 RE, DCD771). Battery platforms and series names such as LXT, CXT, 18V or "Professional" are NOT model numbers: use null when no model number is legible.
 Identify whatever product is visible, even if it is not hardware: fill name, brand and category from what you can see (for example a printed logo or label).
 Set is_hardware to false when the item is not something a hardware, construction, electrical, plumbing, paint or garden supply store sells (for example food, drinks, clothing, phones, cosmetics, toys, a person or an animal), and add the note "Not a hardware product". Set image_sufficient to false only when the photo is too blurry, dark or cropped to identify anything.
 Use null for anything you cannot read or see. Never guess a brand or model number; lower the confidence instead.
@@ -50,15 +53,5 @@ TXT;
             ->reject(fn ($p) => ! empty($p['thought']))->pluck('text')->filter()->implode("\n");
 
         return new AnalysisResult(ProductExtraction::fromModelOutput($this->decodeJson($text)), 'gemma', $cfg['model'], false, ['text' => mb_substr($text, 0, 4000)]);
-    }
-
-    private function decodeJson(string $text): mixed
-    {
-        $text = trim(preg_replace('/^```(?:json)?|```$/m', '', $text));
-        if (($start = strpos($text, '{')) === false || ($end = strrpos($text, '}')) === false) {
-            throw new AiProviderException('The model did not return JSON.');
-        }
-
-        return json_decode(substr($text, $start, $end - $start + 1), true) ?? throw new AiProviderException('The model returned malformed JSON.');
     }
 }

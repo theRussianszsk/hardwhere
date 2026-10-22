@@ -5,7 +5,17 @@ use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+// The Inertia starter page needs a built Vite bundle. This deployment is an API for the mobile apps, so without a build
+// the root answers with a small JSON descriptor instead of a 500.
+Route::get('/', fn () => file_exists(public_path('build/manifest.json'))
+    ? inertia('welcome')
+    : response()->json([
+        'name' => config('app.name'),
+        'status' => 'ok',
+        'api' => url('/api/v1'),
+        'health' => url('/api/v1/health'),
+        'docs' => 'Mobile apps talk to /api/v1; see README.md.',
+    ]))->name('home');
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])

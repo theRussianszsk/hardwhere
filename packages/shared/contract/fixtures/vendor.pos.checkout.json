@@ -1,0 +1,45 @@
+{
+    "data": {
+        "id": 1,
+        "receipt_no": "REC-000001",
+        "store_id": 1,
+        "status": "completed",
+        "cashier_id": 1,
+        "subtotal_cents": 850000,
+        "discount_cents": 0,
+        "vat_cents": 91071,
+        "total_cents": 850000,
+        "payment_method": "cash",
+        "payment_reference": null,
+        "tendered_cents": 99999999,
+        "change_cents": 99149999,
+        "customer_name": null,
+        "customer_phone": null,
+        "completed_at": "2026-01-01T00:00:00+00:00",
+        "voided_at": null,
+        "void_reason": null,
+        "items": [
+            {
+                "id": 1,
+                "listing_id": 1,
+                "sku": "DCH-NL-3",
+                "name": "Common wire nail 3\" (per kg)",
+                "quantity": 100,
+                "unit_price_cents": 8500,
+                "discount_cents": 0,
+                "vat_cents": 91071,
+                "line_total_cents": 850000,
+                "returned_quantity": 0
+            }
+        ],
+        "low_stock": [
+            {
+                "inventory_item_id": 1,
+                "sku": "DCH-NL-3",
+                "remaining": 15,
+                "reorder_threshold": 40
+            }
+        ]
+    },
+    "replayed": false
+}

@@ -6,8 +6,8 @@ use App\Models\InventoryItem;
 use App\Models\PosSession;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\Store;
 use App\Models\StockSnapshot;
+use App\Models\Store;
 use App\Models\TenantListing;
 use App\Support\ApiException;
 use App\Tenancy\TenantContext;
@@ -40,7 +40,7 @@ class PosService
         }
 
         return $this->idempotency->run(
-            "t{$ctx->tenantId}", $idempotencyKey, 'pos.checkout', Idempotency::hash($data), Sale::class,
+            "t{$ctx->tenantId}:u{$ctx->userId}", $idempotencyKey, 'pos.checkout', Idempotency::hash($data + ['_store' => $storeId]), Sale::class,
             fn () => $this->execute($ctx, $storeId, $data, $idempotencyKey),
         );
     }
@@ -101,8 +101,10 @@ class PosService
 
         $session = null;
         if (! empty($data['pos_session_id'])) {
-            $session = PosSession::query()->forTenant($ctx)->whereNull('closed_at')->find($data['pos_session_id'])
+            $session = PosSession::query()->forTenant($ctx)->whereNull('closed_at')->with('register')->find($data['pos_session_id'])
                 ?? throw ApiException::invalid('session_closed', 'The register session is not open.');
+            ($session->register->store_id === $store->id && ($session->opened_by === $ctx->userId || $ctx->can('sales.view_all')))
+                || throw ApiException::invalid('session_invalid', 'That register session belongs to another store or cashier.');
         }
 
         $sale = Sale::create([

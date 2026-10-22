@@ -25,6 +25,7 @@ use App\Services\StockService;
 use App\Support\ApiException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PosController extends Controller
 {
@@ -108,10 +109,15 @@ class PosController extends Controller
     public function closeSession(CloseSessionRequest $request, int $session): PosSessionResource
     {
         $ctx = $this->ctx();
-        $s = PosSession::query()->forTenant($ctx)->whereNull('closed_at')->findOrFail($session);
-        $s->update(['closed_at' => now(), 'closing_cash_cents' => $request->validated('closing_cash_cents')]);
 
-        return new PosSessionResource($s);
+        return new PosSessionResource(DB::transaction(function () use ($ctx, $request, $session) {
+            $s = PosSession::query()->forTenant($ctx)->whereNull('closed_at')->with('register')->lockForUpdate()->findOrFail($session);
+            $ctx->assertStore($s->register->store_id);
+            $s->opened_by === $ctx->userId || $ctx->can('sales.view_all') || throw ApiException::forbidden('Only the cashier who opened this session (or a manager) can close it.');
+            $s->update(['closed_at' => now(), 'closing_cash_cents' => $request->validated('closing_cash_cents')]);
+
+            return $s;
+        }));
     }
 
     public function sales(Request $request)

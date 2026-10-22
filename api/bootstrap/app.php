@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\HandleAppearance;
-use App\Support\ApiErrors;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SetTeamUrlDefaults;
+use App\Support\ApiErrors;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,8 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Behind a load balancer set TRUSTED_PROXIES (comma separated IPs/CIDRs, or *) so rate limits see the real client IP.
+        // Read from the real process environment: env() is unavailable here once config is cached.
+        $middleware->trustProxies(at: getenv('TRUSTED_PROXIES') ? explode(',', (string) getenv('TRUSTED_PROXIES')) : null);
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
-        $middleware->alias(['abilities' => CheckAbilities::class, 'ability' => CheckForAnyAbility::class, 'tenant' => ResolveTenant::class]);
+        $middleware->alias(['abilities' => CheckAbilities::class, 'ability' => CheckForAnyAbility::class, 'tenant' => ResolveTenant::class, 'platform_admin' => EnsurePlatformAdmin::class]);
 
         $middleware->web(append: [
             HandleAppearance::class,

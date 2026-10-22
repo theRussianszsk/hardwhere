@@ -26,7 +26,11 @@ return [
         explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')),
     ))),
 
-    'allowed_origins_patterns' => [],
+    // Outside production, also accept the dev server reached by 127.0.0.1 or a private-network address (testing on a phone over Wi-Fi).
+    // Production uses only the explicit list above.
+    'allowed_origins_patterns' => env('APP_ENV', 'production') === 'production' ? [] : [
+        '#^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$#',
+    ],
 
     'allowed_headers' => ['*'],
 

@@ -24,8 +24,10 @@ class AuthController extends Controller
         $d = $request->validated();
         $user = User::query()->where('email', $d['email'])->first();
 
-        // Same answer for unknown email and wrong password.
-        if (! $user || ! Hash::check($d['password'], $user->password)) {
+        // Same answer AND same work for unknown email and wrong password (no timing oracle for account enumeration).
+        $hash = $user->password ?? '$2y$12$abcdefghijklmnopqrstuuAqkVJ3d1WZ0b5v1m9sZk3b1Rr7mYb2e';
+        $ok = Hash::check($d['password'], $hash);
+        if (! $user || ! $ok) {
             throw new ApiException('invalid_credentials', 'Email or password is incorrect.', 401);
         }
 
@@ -59,6 +61,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $token = $request->user()->currentAccessToken();
+        $token instanceof PersonalAccessToken || throw new ApiException('unauthenticated', 'Sign in again.', 401);
 
         return response()->json(['user' => $this->userPayload($request->user())] + $this->scopePayload($token));
     }
@@ -67,9 +70,14 @@ class AuthController extends Controller
     public function renew(Request $request): JsonResponse
     {
         $old = $request->user()->currentAccessToken();
+        $old instanceof PersonalAccessToken || throw new ApiException('unauthenticated', 'Sign in again.', 401);
         $app = match (true) {
             $old->can('vendor') => 'vendor', $old->can('platform') => 'admin', default => 'customer',
         };
+        if ($app === 'admin' && ! $request->user()->is_platform_admin) {
+            $old->delete();
+            throw ApiException::forbidden('Platform administrator access was revoked.');
+        }
         $membership = $old->tenant_id ? TenantMembership::query()->with('tenant')->where('tenant_id', $old->tenant_id)->where('user_id', $old->tokenable_id)->first() : null;
         if ($app === 'vendor' && ! $membership) {
             $old->delete();

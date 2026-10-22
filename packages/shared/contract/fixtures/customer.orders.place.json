@@ -1,0 +1,74 @@
+{
+    "data": {
+        "id": 1,
+        "order_no": "HW-000001",
+        "status": "reserved",
+        "fulfillment_type": "pickup",
+        "store": {
+            "id": 1,
+            "business_name": "Dela Cruz Hardware",
+            "name": "Kamuning Branch",
+            "address_line": "45 K-1st St, Kamuning",
+            "barangay": null,
+            "city": "Quezon City",
+            "province": "Metro Manila",
+            "postal_code": null,
+            "lat": 14.6285,
+            "lng": 121.0366,
+            "phone": "+6328123001",
+            "email": "dch-qc@hardwhere.test",
+            "hours": {
+                "sun": [
+                    "09:00",
+                    "15:00"
+                ],
+                "mon-sat": [
+                    "08:00",
+                    "18:00"
+                ]
+            },
+            "supports_pickup": true,
+            "supports_delivery": true,
+            "directions_url": "https://www.google.com/maps/dir/?api=1&destination=14.6285,121.0366",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+        },
+        "store_id": 1,
+        "subtotal_cents": 34900,
+        "delivery_fee_cents": 0,
+        "total_cents": 34900,
+        "contact_name": "Ana",
+        "contact_phone": "+639171230001",
+        "delivery_address": null,
+        "notes": null,
+        "placed_at": "2026-01-01T00:00:00+00:00",
+        "confirmed_at": null,
+        "ready_at": null,
+        "fulfilled_at": null,
+        "cancelled_at": null,
+        "cancel_reason": null,
+        "reservation": {
+            "status": "active",
+            "expires_at": "2026-01-01T00:00:00+00:00"
+        },
+        "items": [
+            {
+                "id": 1,
+                "listing_id": 1,
+                "variant_id": 1,
+                "sku": "DCH-HMR-016",
+                "name": "Stanley 51-188 Claw Hammer 16oz",
+                "quantity": 1,
+                "unit_price_cents": 34900,
+                "line_total_cents": 34900
+            }
+        ],
+        "customer_can_cancel": true,
+        "next_statuses": [
+            "confirmed",
+            "cancelled"
+        ],
+        "row_version": null,
+        "updated_at": "2026-01-01T00:00:00+00:00"
+    },
+    "replayed": false
+}

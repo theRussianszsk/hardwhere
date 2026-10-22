@@ -14,6 +14,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
 use App\Services\AiIntakeService;
+use App\Services\DemandMonitor;
 use App\Services\MarketplaceSearch;
 use App\Services\StockService;
 use App\Support\ApiException;
@@ -24,7 +25,7 @@ class MarketplaceController extends Controller
 {
     use ApiHelpers;
 
-    public function __construct(private MarketplaceSearch $search, private AiIntakeService $ai) {}
+    public function __construct(private MarketplaceSearch $search, private AiIntakeService $ai, private DemandMonitor $demand) {}
 
     public function categories()
     {
@@ -36,8 +37,10 @@ class MarketplaceController extends Controller
         $request->validate(['q' => ['nullable', 'string', 'max:200'], 'brand' => ['nullable', 'string', 'max:80'], 'category' => ['nullable', 'string', 'max:80'],
             'sort' => ['nullable', 'in:relevance,price_asc,price_desc'], 'per_page' => ['nullable', 'integer', 'min:1', 'max:50']]);
 
-        return ProductResource::collection($this->search->products($request->only(['q', 'brand', 'category', 'sort']) + ['in_stock' => $request->boolean('in_stock'), 'per_page' => $this->perPage($request, 20)]))
-            ->additional(['meta_extra' => ['server_time' => now()->toIso8601String()]]);
+        $results = $this->search->products($request->only(['q', 'brand', 'category', 'sort']) + ['in_stock' => $request->boolean('in_stock'), 'per_page' => $this->perPage($request, 20)]);
+        $this->recordDemand(fn () => $this->demand->recordTextSearch(DemandMonitor::searcherKey($request), $request->only(['q', 'brand', 'category']), $results));
+
+        return ProductResource::collection($results)->additional(['meta_extra' => ['server_time' => now()->toIso8601String()]]);
     }
 
     public function product(int $product): ProductResource
@@ -78,8 +81,19 @@ class MarketplaceController extends Controller
     public function photoSearch(AnalyzeImageRequest $request): JsonResponse
     {
         $analysis = $this->ai->analyze($request->user(), null, $request->file('image'), 'marketplace_search', $this->idempotencyKey($request), $request->validated('hint'), $this->ai->publiclyListed());
-        $analysis->candidates->isEmpty() && $analysis->classification === 'insufficient_confidence' && throw new ApiException('image_insufficient', 'That photo is not clear enough to identify. Try a closer, well-lit shot of the label.', 422, ['analysis' => (new AiAnalysisResource($analysis))->resolve()]);
+        $this->recordDemand(fn () => $this->demand->recordPhotoSearch(DemandMonitor::searcherKey($request), $analysis));
+        $analysis->candidates->isEmpty() && $analysis->classification === 'insufficient_confidence' && throw new ApiException('image_insufficient', $analysis->is_mock ? 'Demo AI can only recognise its built-in demo photos. Pick a demo photo, or connect a live model.' : 'That photo is not clear enough to identify. Try a closer, well-lit shot of the label.', 422, ['analysis' => (new AiAnalysisResource($analysis))->resolve()]);
 
         return response()->json(['data' => (new AiAnalysisResource($analysis))->resolve(), 'meta' => ['server_time' => now()->toIso8601String()]]);
+    }
+
+    /** Demand tracking is a side channel: a failure there must never fail the customer's search. */
+    private function recordDemand(\Closure $record): void
+    {
+        try {
+            $record();
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }
