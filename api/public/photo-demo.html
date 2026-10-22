@@ -24,7 +24,7 @@
   .banner { padding:10px 12px; border-radius:8px; font-size:13px; border:1px solid; }
   .banner.demo { color:var(--warn); border-color:var(--warn); } .banner.err { color:var(--bad); border-color:var(--bad); } .banner.ok { color:var(--ok); border-color:var(--ok); }
   .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid currentColor; }
-  .exact_match, .likely_same_product { color:var(--ok); } .likely_variant, .possible_duplicate { color:var(--warn); } .new_product_candidate { color:var(--info); } .insufficient_confidence { color:var(--bad); }
+  .exact_match, .likely_same_product { color:var(--ok); } .likely_variant, .possible_duplicate { color:var(--warn); } .new_product_candidate { color:var(--info); } .insufficient_confidence, .not_hardware { color:var(--bad); }
   .bar { height:8px; border-radius:99px; background:var(--line); overflow:hidden; } .bar > i { display:block; height:100%; background:var(--brand); }
   .preview { max-width:100%; max-height:240px; border-radius:8px; border:1px solid var(--line); }
   dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:8px 0 0; } dt { color:var(--muted); font-size:13px; } dd { margin:0; }
@@ -222,15 +222,16 @@ function renderResult(a, notice) {
     .filter(([, v]) => v != null && v !== '').map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
   $('result').innerHTML = `
     ${notice ? `<div class="banner err">${esc(notice)}</div>` : ''}
-    <div class="banner ${a.is_mock ? 'demo' : 'ok'}">${esc(a.provider_label)}</div>
+    ${a.is_mock ? `<div class="banner demo">${esc(a.provider_label)}</div>` : ''}
     <h2 style="margin-top:12px">3. Result <span class="badge ${esc(a.classification)}">${esc(label(a.classification))}</span></h2>
     <div class="muted">Overall confidence ${conf}%${a.requires_confirmation ? ' · human confirmation required' : ''}</div>
     <div class="bar" role="progressbar" aria-valuenow="${conf}" aria-valuemin="0" aria-valuemax="100"><i style="width:${conf}%"></i></div>
     ${(a.warnings || []).length ? `<div class="chips" style="margin-top:10px">${a.warnings.map((w) => `<span class="chip warn">${esc(typeof w === 'string' ? w : (w.message || w.code))}</span>`).join('')}</div>` : ''}
     <h3 style="margin-top:14px">What the AI read from the photo</h3>
     <dl>${rows}${attrs}</dl>
+    ${a.classification === 'not_hardware' ? '<div class="banner err" style="margin-top:14px"><strong>Not a hardware product.</strong> No store here carries it, so nothing was matched.</div>' : `
     <h3 style="margin-top:14px">Catalog matches (${(a.candidates || []).length})</h3>
-    ${(a.candidates || []).map((c, i) => candidateHtml(a, c, i)).join('') || '<div class="muted">No catalog product is similar enough. In vendor intake you can create a new catalog candidate.</div>'}
+    ${(a.candidates || []).map((c, i) => candidateHtml(a, c, i)).join('') || '<div class="muted">No catalog product matches this photo. In vendor intake you can create a new catalog candidate.</div>'}`}
   `;
   document.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => pick(a, +b.dataset.pick)));
   document.querySelectorAll('[data-stores]').forEach((b) => (b.onclick = () => showListings(+b.dataset.stores, b.dataset.name)));

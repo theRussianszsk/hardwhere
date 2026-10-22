@@ -24,6 +24,7 @@ class MockVisionProvider implements VisionProvider
             'conflicting-barcode' => ['name' => 'Claw Hammer', 'brand' => 'Tolsen', 'model' => '25101', 'category' => 'Hand Tools', 'attributes' => [], 'barcode_text' => '4800000100017', 'confidence' => $c(0.7, 0.75, 0.7, 0.9, 0.5, 0.9), 'overall_confidence' => 0.75],
             'unknown-product' => ['name' => 'Expanding foam sealant 750ml', 'brand' => 'Kingfoam', 'model' => 'KF-750', 'category' => 'Building Supplies', 'attributes' => ['capacity_ml' => 750], 'confidence' => $c(0.8, 0.7, 0.7, 0.85, 0.7), 'overall_confidence' => 0.74],
             'blurry' => ['name' => null, 'brand' => null, 'model' => null, 'category' => null, 'attributes' => [], 'confidence' => $c(0.1, 0.0, 0.0, 0.1, 0.0), 'overall_confidence' => 0.12, 'image_sufficient' => false, 'notes' => ['Image is too blurry to read any label.']],
+            'not-hardware' => ['name' => 'Instant noodles cup', 'brand' => 'Lucky Me!', 'model' => null, 'category' => 'Food', 'attributes' => [], 'confidence' => $c(0.92, 0.9, 0.0, 0.9, 0.0), 'overall_confidence' => 0.9, 'is_hardware' => false, 'notes' => ['Not a hardware product']],
         ];
     }
 

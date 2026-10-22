@@ -19,7 +19,7 @@ return [
         'openrouter' => [
             'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
             'api_key' => env('OPENROUTER_API_KEY', env('OPEN_ROUTER_API')),
-            'model' => env('OPENROUTER_MODEL', 'google/gemma-4-26b-a4b-it'),
+            'model' => env('OPENROUTER_MODEL', 'deepseek/deepseek-v4.1-flash-1017'),
             'timeout' => (int) env('OPENROUTER_TIMEOUT', 60),
         ],
         'max_image_kb' => (int) env('AI_MAX_IMAGE_KB', 8192),

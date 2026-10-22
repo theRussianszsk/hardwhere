@@ -9,8 +9,9 @@ class AiAnalysisResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id' => $this->id, 'purpose' => $this->purpose, 'provider' => $this->provider, 'model' => $this->model,
-            'is_mock' => $this->is_mock, 'provider_label' => $this->is_mock ? 'Demo AI (deterministic mock, not live inference)' : "Live AI ({$this->model})",
+            // Which provider/model ran stays server-side (ai_analyses row); clients only learn whether the result is a demo mock.
+            'id' => $this->id, 'purpose' => $this->purpose,
+            'is_mock' => $this->is_mock, 'provider_label' => $this->is_mock ? 'Demo AI (deterministic mock, not live inference)' : 'AI recognition',
             'extracted' => $this->extracted, 'classification' => $this->classification, 'overall_confidence' => $this->overall_confidence,
             'requires_confirmation' => $this->requires_confirmation, 'warnings' => $this->warnings,
             'candidates' => $this->whenLoaded('candidates', fn () => $this->candidates->map(fn ($c) => [
