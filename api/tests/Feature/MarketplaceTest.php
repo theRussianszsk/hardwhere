@@ -152,6 +152,21 @@ it('sorts and paginates, and reports price ranges and store counts', function ()
     expect($instock)->toBe(3);
 });
 
+it('sorts price high-to-low by the top of each range and prices cards from listings that are in stock', function () {
+    $tape = World::stocked($this->a, $this->refs['TLPL8'], 5, 29500)['listing']->product_id;
+    World::stocked($this->b, $this->refs['TLPL8'], 5, 36000);                       // tape: 295.00 – 360.00, hammer: 329.00 – 350.00
+    $search = fn (string $qs = '') => collect($this->getJson('/api/v1/public/search?'.$qs)->assertOk()->json('data'))->keyBy('id');
+    expect($search('sort=price_desc')->keys()->all())->toBe([$tape, $this->product]); // by the cheapest price the hammer (329.00) would wrongly come first
+
+    $this->svc->updateListing($this->b['ctx'], $this->lb->id, ['stock_buffer' => 3]);  // Bravo's 3 hammers are all withheld: nothing to buy there
+    $hammer = $search()[$this->product];
+    expect([$hammer['min_price_cents'], $hammer['max_price_cents'], $hammer['store_count']])->toBe([35000, 35000, 1]);
+
+    $this->svc->updateListing($this->a['ctx'], $this->la->id, ['stock_buffer' => 20]); // out of stock everywhere: still priced from every listing
+    $hammer = $search()[$this->product];
+    expect([$hammer['min_price_cents'], $hammer['max_price_cents'], $hammer['store_count']])->toBe([32900, 35000, 2]);
+});
+
 it('orders the store comparison by distance and gives contact + directions', function () {
     $near = collect($this->getJson("/api/v1/public/products/{$this->product}/listings?lat=14.60&lng=121.00")->json('data'));
     expect($near->first()['store']['business_name'])->toBe('Alpha Hardware')->and($near->first()['distance_km'])->toBeLessThan(10)->and($near->last()['distance_km'])->toBeGreaterThan(500);

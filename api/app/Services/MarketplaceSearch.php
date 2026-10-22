@@ -70,9 +70,9 @@ class MarketplaceSearch
             ->whereExists($exists)
             ->addSelect('products.*')
             ->selectRaw($text !== '' ? 'similarity(products.search_text, ?) AS relevance' : '0 AS relevance', $text !== '' ? [$text] : [])
-            ->selectSub(fn ($q) => $matching($q)->selectRaw("MIN($price)"), 'min_price_cents')
-            ->selectSub(fn ($q) => $matching($q)->selectRaw("MAX($price)"), 'max_price_cents')
-            ->selectSub(fn ($q) => $matching($q)->selectRaw('COUNT(DISTINCT l.store_id)'), 'store_count');
+            ->selectRaw(...$this->aggregate($matching, "MIN($price)", 'min_price_cents'))
+            ->selectRaw(...$this->aggregate($matching, "MAX($price)", 'max_price_cents'))
+            ->selectRaw(...$this->aggregate($matching, 'COUNT(DISTINCT l.store_id)', 'store_count'));
         if ($geo) {
             $query->selectRaw($text !== '' ? 'round(similarity(products.search_text, ?)::numeric, 1) AS relevance_band' : '0 AS relevance_band', $text !== '' ? [$text] : []);
             $query->selectSub(fn ($q) => $matching($q)->join('stores as ns', 'ns.id', '=', 'l.store_id')->selectRaw('MIN('.self::haversineSql('ns').')', [$f['lat'], $f['lat'], $f['lng']]), 'nearest_km');
@@ -106,11 +106,26 @@ class MarketplaceSearch
             'relevance' => $geo ? $query->orderByRaw('relevance_band DESC')->orderByRaw('nearest_km ASC NULLS LAST')->orderByDesc('relevance')->orderBy('products.id')
                 : $query->orderByDesc('relevance')->orderBy('products.name')->orderBy('products.id'),
             'price_asc' => $query->orderBy('min_price_cents')->orderBy('products.id'),
-            'price_desc' => $query->orderByDesc('min_price_cents')->orderBy('products.id'),
+            'price_desc' => $query->orderByDesc('max_price_cents')->orderBy('products.id'),
             default => $query->orderByDesc('relevance')->orderBy('products.name')->orderBy('products.id'),
         };
 
         return $query->paginate($f['per_page'] ?? 20);
+    }
+
+    /**
+     * A per-product listing aggregate for the result card ("₱X – ₱Y", "N stores"), taken over the matching listings a customer
+     * can buy now (marketplace availability > 0). A product with nothing in stock anywhere falls back to all its matching listings,
+     * so it still shows a price instead of none.
+     *
+     * @return array{0: string, 1: list<mixed>}
+     */
+    private function aggregate(\Closure $matching, string $expr, string $as): array
+    {
+        $stocked = $matching(DB::query())->whereRaw(StockService::availableSql('l').' - l.stock_buffer > 0')->selectRaw($expr);
+        $all = $matching(DB::query())->selectRaw($expr);
+
+        return ["COALESCE(NULLIF(({$stocked->toSql()}), 0), ({$all->toSql()})) AS $as", [...$stocked->getBindings(), ...$all->getBindings()]];
     }
 
     /** Free-text match on a product query: every token, trigram similarity, barcode, alias, or a store's exact SKU. */
