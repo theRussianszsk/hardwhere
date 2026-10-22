@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\StockLedgerEntry;
 use App\Models\TenantListing;
 use App\Models\User;
+use App\Services\CatalogService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -280,4 +281,21 @@ describe('OpenAI-compatible provider', function () {
         ($this->analyze)(null)->assertStatus(503)->assertJsonPath('error.details.reason', 'AI_OPENAI_BASE_URL and AI_OPENAI_MODEL must be configured.');
         expect(AiAnalysis::query()->count())->toBe(0);
     });
+});
+
+it('normalises unit-suffixed model attributes to numbers so numeric search and comparison work', function () {
+    $x = ProductExtraction::fromModelOutput(['name' => 'Drill', 'attributes' => [
+        'voltage_v' => '18V', 'wattage_w' => '710 W', 'length_mm' => '1.5 mm', 'capacity_l' => '4 L', 'amperage_a' => 20, 'color' => 'Teal and Black', 'series' => 'LXT', 'size' => '#10 x 1"', 'weight_oz' => 'about 16 oz',
+    ]]);
+    expect($x->attributes)->toBe(['voltage_v' => 18, 'wattage_w' => 710, 'length_mm' => 1.5, 'capacity_l' => 4, 'amperage_a' => 20, 'color' => 'Teal and Black', 'series' => 'LXT', 'size' => '#10 x 1"', 'weight_oz' => 'about 16 oz']);
+});
+
+it('finds a product by natural-language voltage even when the model said "18V" as text', function () {
+    $cat = Category::where('slug', 'power-tools')->value('id');
+    $x = ProductExtraction::fromModelOutput(['name' => 'Cordless drill', 'attributes' => ['voltage_v' => '18V']]);
+    $p = app(CatalogService::class)->createProduct(['category_id' => $cat, 'name' => 'Zenith 18V Cordless Drill', 'brand' => 'Zenith', 'variants' => [['name' => 'Zenith 18V', 'attributes' => $x->attributes]]]);
+    $w = World::tenant('zen');
+    World::stocked($w, $p->variants->first()->id, 5, 500000);
+    $found = collect($this->getJson('/api/v1/public/search?q='.urlencode('zenith 18v drill'))->assertOk()->json('data'))->pluck('id');
+    expect($found)->toContain($p->id);
 });

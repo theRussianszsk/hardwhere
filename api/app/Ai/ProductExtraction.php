@@ -49,6 +49,20 @@ final readonly class ProductExtraction
         ];
     }
 
+    /**
+     * Models answer "18V", "710 W" or "16 mm" where the catalogue stores numbers. Keys that carry a unit suffix
+     * (voltage_v, wattage_w, length_mm, capacity_ml ...) become numbers so structured comparison and numeric search work.
+     */
+    private static function normalizeAttribute(string $key, mixed $value): mixed
+    {
+        if (is_string($value) && preg_match('/_(v|w|a|ah|mah|hz|rpm|mm|cm|m|ml|l|g|kg|oz|lb)$/', $key)
+            && preg_match('/^\s*(-?\d+(?:\.\d+)?)\s*[a-zA-Zµ²\/%]*\s*$/u', str_replace(',', '.', $value), $m)) {
+            return str_contains($m[1], '.') ? (float) $m[1] : (int) $m[1];
+        }
+
+        return $value;
+    }
+
     /** Validates untrusted model output (decoded JSON) into a safe DTO. */
     public static function fromModelOutput(mixed $raw): self
     {
@@ -60,7 +74,7 @@ final readonly class ProductExtraction
         $attributes = [];
         foreach (is_array($raw['attributes'] ?? null) ? $raw['attributes'] : [] as $k => $v) {
             if (is_string($k) && preg_match('/^[a-z][a-z0-9_]{0,39}$/', $k) && (is_int($v) || is_float($v) || is_string($v) || is_bool($v))) {
-                $attributes[$k] = is_string($v) ? mb_substr($v, 0, 80) : $v;
+                $attributes[$k] = self::normalizeAttribute($k, is_string($v) ? mb_substr($v, 0, 80) : $v);
             }
         }
 
