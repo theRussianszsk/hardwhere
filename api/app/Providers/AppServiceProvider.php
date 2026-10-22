@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Ai\GemmaVisionProvider;
 use App\Ai\MockVisionProvider;
 use App\Ai\OpenAiCompatibleVisionProvider;
+use App\Ai\OpenRouterVisionProvider;
 use App\Ai\VisionProvider;
 use App\Enums\TenantRole;
 use App\Models\PersonalAccessToken;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(VisionProvider::class, fn () => match (config('hardwhere.ai.provider')) {
             'gemma' => new GemmaVisionProvider,
             'openai' => new OpenAiCompatibleVisionProvider,
+            'openrouter' => new OpenRouterVisionProvider,
             default => new MockVisionProvider,
         });
     }
