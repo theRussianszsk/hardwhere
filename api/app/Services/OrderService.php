@@ -128,7 +128,6 @@ class OrderService
         return $order->load('items', 'reservation');
     }
 
-<<<<<<< HEAD
     /**
      * StockService::allocate, with a customer-safe 409: the listing instead of the internal item id, and the exact
      * available count only when the store shows exact stock (otherwise just the public availability bucket).
@@ -151,10 +150,7 @@ class OrderService
         }
     }
 
-    /** Listings a customer may buy: published, public, live store, active tenant. @param list<int> $ids */
-=======
     /** Listings a customer may buy: exactly what the marketplace shows (published, public, approved product, live store, active tenant). @param list<int> $ids */
->>>>>>> master
     public function purchasable(array $ids)
     {
         return MarketplaceSearch::liveListings()->whereIn('tenant_listings.id', $ids);
